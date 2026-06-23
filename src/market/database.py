@@ -101,6 +101,7 @@ class MarketDatabase:
                 id TEXT PRIMARY KEY,
                 original_name TEXT NOT NULL,
                 description TEXT NOT NULL DEFAULT '',
+                version TEXT NOT NULL DEFAULT '',
                 command TEXT NOT NULL DEFAULT '',
                 args TEXT NOT NULL DEFAULT '[]',
                 package TEXT NOT NULL DEFAULT '',
@@ -501,11 +502,12 @@ class MarketDatabase:
         tools_json = json.dumps(mcp_data.get("tools", []), ensure_ascii=False)
         env_json = json.dumps(mcp_data.get("required_env", []), ensure_ascii=False)
         await self._conn.execute(
-            "INSERT OR REPLACE INTO mcp_servers (id, original_name, description, command, args, package, tools, required_env, "
+            "INSERT OR REPLACE INTO mcp_servers (id, original_name, description, version, command, args, package, tools, required_env, "
             "package_path, package_size, package_format, config_content, updated_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (mcp_data["id"], mcp_data.get("original_name", ""),
-             mcp_data.get("description", ""), mcp_data.get("command", ""),
+             mcp_data.get("description", ""), mcp_data.get("version", ""),
+             mcp_data.get("command", ""),
              args_json, mcp_data.get("package", ""),
              tools_json, env_json,
              mcp_data.get("package_path", ""),

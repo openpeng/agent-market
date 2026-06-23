@@ -115,6 +115,16 @@ def verify_package(pkg_path: Path):
     return len(errors) == 0, errors
 
 
+def _resolve_pkg_root(pkg_path: Path) -> Path:
+    """如果 pkg_path 下只有一个子目录，返回该子目录；否则返回 pkg_path 本身。
+    用于处理 tar.gz 包顶层带目录的情况。"""
+    if pkg_path.is_dir():
+        subdirs = [d for d in pkg_path.iterdir() if d.is_dir()]
+        if len(subdirs) == 1 and not any(f.is_file() for f in pkg_path.iterdir()):
+            return subdirs[0]
+    return pkg_path
+
+
 def verify_skill_package(pkg_path: Path):
     """
     验证 Skill 包的安全性和完整性（v3.1 新增）。
@@ -123,6 +133,9 @@ def verify_skill_package(pkg_path: Path):
     """
     errors = []
     MAX_SKILL_SIZE = 10 * 1024 * 1024  # 10MB
+
+    # 处理 tar.gz 包顶层带目录的情况
+    pkg_path = _resolve_pkg_root(pkg_path)
 
     # ---- Size check ----
     total = sum(f.stat().st_size for f in pkg_path.rglob("*") if f.is_file())
@@ -175,6 +188,9 @@ def verify_mcp_package(pkg_path: Path):
     """
     errors = []
     MAX_MCP_SIZE = 10 * 1024 * 1024  # 10MB
+
+    # 处理 tar.gz 包顶层带目录的情况
+    pkg_path = _resolve_pkg_root(pkg_path)
 
     # ---- Size check ----
     total = sum(f.stat().st_size for f in pkg_path.rglob("*") if f.is_file())

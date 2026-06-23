@@ -66,6 +66,8 @@ src/market/
 
 ## API 端点
 
+### Agent
+
 | Method | Path | 说明 | 认证 |
 |--------|------|------|------|
 | `GET` | `/api/v1/health` | 健康检查 | 无 |
@@ -79,9 +81,33 @@ src/market/
 | `POST` | `/api/v1/agents/{id}/ratings` | 评分 | publisher |
 | `GET` | `/api/v1/agents/{id}/ratings` | 查看评分 | 无 |
 | `GET` | `/api/v1/discover` | Agent 发现（按能力匹配） | 无 |
+
+### Skill (v3.1)
+
+| Method | Path | 说明 | 认证 |
+|--------|------|------|------|
+| `POST` | `/api/v1/skills/upload` | 上传 Skill 包 | publisher |
+| `GET` | `/api/v1/skills/{id}/download` | 下载 Skill 包 | 无 |
+| `GET` | `/api/v1/skills` | 列出 Skills | 无 |
+| `GET` | `/api/v1/skills/{id}` | Skill 详情 | 无 |
+
+### MCP Server (v3.1)
+
+| Method | Path | 说明 | 认证 |
+|--------|------|------|------|
+| `POST` | `/api/v1/mcp-servers/upload` | 上传 MCP Server 包 | publisher |
+| `GET` | `/api/v1/mcp-servers/{id}/download` | 下载 MCP Server 包 | 无 |
+| `GET` | `/api/v1/mcp-servers` | 列出 MCP Servers | 无 |
+| `GET` | `/api/v1/mcp-servers/{id}` | MCP Server 详情 | 无 |
+
+### 管理
+
+| Method | Path | 说明 | 认证 |
+|--------|------|------|------|
 | `POST` | `/api/v1/api-keys` | 创建 API Key | master/admin |
 | `GET` | `/api/v1/api-keys` | 列出 API Keys | admin |
 | `DELETE` | `/api/v1/api-keys/{key}` | 撤销 API Key | admin |
+| `POST` | `/api/v1/agents/resync` | 重新同步 Skills/MCP | admin |
 
 ## CLI 用法
 
@@ -126,6 +152,37 @@ python src/cli/market.py key list --api-key YOUR_ADMIN_KEY
 | 常量时间比对 | API Key 验证防时序攻击 |
 | Docker 部署 | Dockerfile + docker-compose.yml 一键部署 |
 
+## v3.1 新特性：Skill & MCP 独立打包
+
+从 v1.1.0 开始，市场支持 Skill 和 MCP Server 的独立打包与发布：
+
+```bash
+# 打包 Skill
+python -m agent_deploy.skill_mcp_cli skill pack ./my-skill
+
+# 上传 Skill 到市场
+python -m agent_deploy.skill_mcp_cli skill upload ./my-skill --api-key YOUR_KEY
+
+# 打包 MCP Server
+python -m agent_deploy.skill_mcp_cli mcp pack ./my-mcp
+
+# 上传 MCP Server 到市场
+python -m agent_deploy.skill_mcp_cli mcp upload ./my-mcp --api-key YOUR_KEY
+```
+
+Agent 可以通过引用方式使用市场发布的 Skill/MCP：
+
+```json
+{
+  "skills": [
+    {"ref": "html-anything", "version": "^1.0.0", "market_url": "https://market.aitboy.cn"}
+  ],
+  "mcp_servers": [
+    {"ref": "tapd", "version": "^1.0.0", "market_url": "https://market.aitboy.cn", "env_override": {"TAPD_WORKSPACE_ID": "12345"}}
+  ]
+}
+```
+
 ## 文档
 
 ### 项目文档
@@ -133,12 +190,17 @@ python src/cli/market.py key list --api-key YOUR_ADMIN_KEY
 - [市场服务实现计划](docs/market-service-implementation.md) — 架构和实现
 - [前端开发计划](docs/market-frontend.md) — Web UI 规划
 
+### 规范文档
+- [SPEC_skill_mcp_reference.md](../SPEC_skill_mcp_reference.md) — Skill/MCP 引用机制完整规范
+- [CHANGELOG_skill_mcp_v3.1.md](../CHANGELOG_skill_mcp_v3.1.md) — v3.1 变更日志
+
 ### 技能文档
 - [Market Helper 技能](skills/market-helper/SKILL.md) — Market API 助手
 - [Market Tutorial 技能](skills/market-tutorial/SKILL.md) — Market 使用教程
 
 ### 相关项目
 - [agent-deploy](https://github.com/openpeng/agent-deploy) — Agent 部署工具，与 Market 完整集成
+- [agent-compose](https://github.com/openpeng/agent-compose) — Agent 运行时与编排器
 
 ## 许可证
 
