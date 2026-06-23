@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenAgent Market — AI Agent 生态市场</title>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=satoshi@400,500,700&display=swap">
+<style>
+:root{
+  --bg:#08080e;
+  --bg-card:rgba(16,18,28,.85);
+  --bg-input:#1a1d2e;
+  --border:rgba(129,140,248,.12);
+  --text:#e6e8f0;
+  --text-dim:#8888a8;
+  --accent:#818cf8;
+  --accent-hover:#a5b4fc;
+  --accent-glow:rgba(129,140,248,.2);
+  --accent2:#22d3ee;
+  --green:#22c55e;
+  --red:#ef4444;
+  --yellow:#eab308;
+  --blue:#3b82f6;
+  --orange:#f59e0b;
+  --radius:12px;
+  --shadow:0 8px 32px rgba(0,0,0,.5);
+  --font-display:'Clash Display',system-ui,sans-serif;
+  --font-body:'Satoshi',system-ui,sans-serif;
+  --font-mono:Consolas,Menlo,'JetBrains Mono',monospace
+}
+*{margin:0;padding:0;box-sizing:border-box}
+
+/* ============================================
+   Background — animated gradient orbs
+   ============================================ */
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  position:relative;
+  overflow-x:hidden
+}
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(129,140,248,.03) 39px,rgba(129,140,248,.03) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(129,140,248,.03) 39px,rgba(129,140,248,.03) 40px);
+  pointer-events:none;
+  z-index:0
+}
+.orb{
+  position:fixed;
+  border-radius:50%;
+  filter:blur(100px);
+  pointer-events:none;
+  z-index:0;
+  opacity:.4
+}
+.orb-1{
+  width:600px;
+  height:600px;
+  background:radial-gradient(circle,rgba(129,140,248,.35),transparent 70%);
+  top:-200px;
+  right:-200px;
+  animation:orbFloat1 20s ease-in-out infinite
+}
+.orb-2{
+  width:500px;
+  height:500px;
+  background:radial-gradient(circle,rgba(34,211,238,.2),transparent 70%);
+  bottom:-150px;
+  left:-150px;
+  animation:orbFloat2 25s ease-in-out infinite
+}
+.orb-3{
+  width:400px;
+  height:400px;
+  background:radial-gradient(circle,rgba(167,139,250,.15),transparent 70%);
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  animation:orbFloat3 30s ease-in-out infinite
+}
+@keyframes orbFloat1{
+  0%,100%{transform:translate(0,0)}
+  25%{transform:translate(-40px,60px)}
+  50%{transform:translate(-80px,-20px)}
+  75%{transform:translate(30px,40px)}
+}
+@keyframes orbFloat2{
+  0%,100%{transform:translate(0,0)}
+  25%{transform:translate(50px,-40px)}
+  50%{transform:translate(100px,30px)}
+  75%{transform:translate(-30px,-60px)}
+}
+@keyframes orbFloat3{
+  0%,100%{transform:translate(-50%,-50%) scale(1)}
+  33%{transform:translate(-45%,-55%) scale(1.1)}
+  66%{transform:translate(-55%,-45%) scale(.9)}
+}
+
+a{color:var(--accent);text-decoration:none}
+
+/* ============================================
+   Header
+   ============================================ */
+.header{background:rgba(8,8,14,.8);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(129,140,248,.08);padding:12px 24px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100}
+.header .logo{font-size:20px;font-weight:700;font-family:var(--font-display);color:var(--accent);white-space:nowrap;text-shadow:0 0 20px var(--accent-glow)}
+.header .status{display:flex;align-items:center;gap:6px;font-size:12px}
+.header .status .dot{width:8px;height:8px;border-radius:50%}
+.header .status .dot.online{background:var(--green);box-shadow:0 0 8px var(--green)}
+.header .status .dot.offline{background:var(--red)}
+.header .stats{display:flex;gap:20px;font-size:13px;color:var(--text-dim);margin-left:auto}
+.header .key-input{background:rgba(26,29,46,.8);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:8px;width:240px;font-size:13px;transition:border-color .2s}
+.header .key-input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 12px var(--accent-glow)}
+
+/* ============================================
+   Tabs
+   ============================================ */
+.tabs{display:flex;gap:0;background:rgba(8,8,14,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(129,140,248,.08);padding:0 24px;overflow-x:auto;position:relative;z-index:99}
+.tab{padding:14px 22px;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);font-size:14px;transition:all .25s;white-space:nowrap;position:relative}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);text-shadow:0 0 16px var(--accent-glow)}
+
+/* ============================================
+   Container & layout
+   ============================================ */
+.container{max-width:1200px;margin:0 auto;padding:24px;position:relative;z-index:1}
+
+/* ============================================
+   Search bar & form controls
+   ============================================ */
+.search-bar{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;align-items:center}
+.search-bar input,.search-bar select{background:rgba(26,29,46,.8);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:14px;transition:border-color .2s}
+.search-bar input:focus,.search-bar select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 12px var(--accent-glow)}
+.search-bar input{flex:1;min-width:200px}
+.search-bar select{min-width:120px}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:all .25s}
+.btn-primary{background:var(--accent);color:white;box-shadow:0 4px 14px var(--accent-glow)}
+.btn-primary:hover{background:var(--accent-hover);box-shadow:0 6px 24px var(--accent-glow);transform:translateY(-1px)}
+.btn-danger{background:var(--red);color:white}
+.btn-danger:hover{opacity:.85}
+.btn-sm{padding:4px 12px;font-size:12px}
+.btn-outline{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+.btn-outline:hover{background:var(--accent);color:white}
+
+/* ============================================
+   Market card grid
+   ============================================ */
+.card{background:rgba(16,18,28,.85);border:1px solid var(--border);border-radius:var(--radius);padding:20px;cursor:pointer;transition:all .3s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.card:hover{border-color:var(--accent);box-shadow:0 8px 32px rgba(129,140,248,.15);transform:translateY(-2px)}
+.card .name{font-size:18px;font-weight:700;font-family:var(--font-display);margin-bottom:4px}
+.card .version{font-size:12px;color:var(--accent);margin-left:8px}
+.card .desc{color:var(--text-dim);font-size:13px;margin:8px 0;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .meta{display:flex;gap:16px;font-size:12px;color:var(--text-dim);margin-top:12px;align-items:center}
+.card .stars{color:var(--yellow)}
+.tag{background:rgba(129,140,248,.12);color:var(--accent);padding:2px 8px;border-radius:12px;font-size:11px;display:inline-block;margin:2px}
+.card .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.pagination{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:24px}
+.pagination span{color:var(--text-dim);font-size:14px}
+
+/* ============================================
+   Modal
+   ============================================ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:rgba(16,18,28,.95);border:1px solid var(--border);border-radius:var(--radius);max-width:680px;width:100%;max-height:85vh;overflow-y:auto;padding:28px;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.modal h2{font-size:22px;font-family:var(--font-display);margin-bottom:16px}
+.modal .close{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--text-dim);font-size:24px;cursor:pointer;transition:color .2s}
+.modal .close:hover{color:var(--text)}
+.modal .field{margin-bottom:14px}
+.modal .field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.modal .field .val{font-size:14px}
+.modal .section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.modal .section h3{font-size:15px;margin-bottom:10px;font-family:var(--font-display)}
+.rating-stars{display:flex;gap:4px;cursor:pointer}
+.rating-stars .star{font-size:24px;color:var(--border);transition:color .15s}
+.rating-stars .star.active{color:var(--yellow)}
+textarea.rating-comment{width:100%;background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;margin-top:10px;font-size:13px;resize:vertical;min-height:60px;font-family:var(--font-body)}
+textarea.rating-comment:focus{border-color:var(--accent);outline:none}
+.review-item{background:var(--bg-input);padding:12px;border-radius:8px;margin-bottom:8px}
+.review-item .stars{color:var(--yellow)}
+.review-item .comment{font-size:13px;margin-top:4px}
+.review-item .date{font-size:11px;color:var(--text-dim);margin-top:4px}
+
+/* ============================================
+   Upload
+   ============================================ */
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:40px;text-align:center;color:var(--text-dim);transition:all .25s;cursor:pointer;background:rgba(16,18,28,.5)}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);color:var(--accent);background:rgba(129,140,248,.04);box-shadow:0 0 24px var(--accent-glow)}
+.upload-zone .icon{font-size:48px;margin-bottom:12px}
+.upload-zone input[type=file]{display:none}
+.upload-row{display:flex;gap:12px;align-items:center;margin-top:16px}
+.upload-row label{font-size:13px;color:var(--text-dim);display:flex;align-items:center;gap:6px;cursor:pointer}
+
+/* ============================================
+   API Keys
+   ============================================ */
+.key-table{width:100%;border-collapse:collapse;margin-top:16px}
+.key-table th,.key-table td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);font-size:13px}
+.key-table th{color:var(--text-dim);font-size:12px;text-transform:uppercase}
+.key-table code{background:var(--bg-input);padding:2px 8px;border-radius:4px;font-size:12px}
+.key-form{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.key-form input,.key-form select{background:rgba(26,29,46,.8);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:14px}
+.key-form input:focus,.key-form select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 12px var(--accent-glow)}
+
+/* ============================================
+   Toasts
+   ============================================ */
+.toast-container{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:10px 18px;border-radius:8px;font-size:13px;color:white;animation:slideIn .3s ease;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.toast.success{background:rgba(34,197,94,.9)}
+.toast.error{background:rgba(239,68,68,.9)}
+.toast.info{background:rgba(129,140,248,.9)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.empty{text-align:center;padding:60px;color:var(--text-dim)}
+.empty .icon{font-size:56px;margin-bottom:12px}
+.spinner{width:24px;height:24px;border:3px solid rgba(129,140,248,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;margin:40px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============================================
+   HOME TAB — Hero section
+   ============================================ */
+.hero{
+  text-align:center;
+  padding:60px 20px 48px;
+  margin-bottom:36px;
+  position:relative
+}
+.hero::after{
+  content:'';
+  position:absolute;
+  bottom:0;left:50%;
+  transform:translateX(-50%);
+  width:60%;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(129,140,248,.4),transparent)
+}
+.hero h1{
+  font-family:var(--font-display);
+  font-size:clamp(2.2rem,6vw,4rem);
+  font-weight:700;
+  background:linear-gradient(135deg,#c4b5fd,#818cf8,#22d3ee);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:16px;
+  text-shadow:none;
+  position:relative;
+  letter-spacing:-.02em;
+}
+.hero h1::after{
+  content:'';
+  position:absolute;
+  inset:-8px -20px;
+  background:radial-gradient(ellipse at center,rgba(129,140,248,.12),transparent 70%);
+  filter:blur(20px);
+  z-index:-1;
+  animation:h1Glow 4s ease-in-out infinite alternate
+}
+@keyframes h1Glow{
+  0%{opacity:.6;transform:scale(.95)}
+  100%{opacity:1;transform:scale(1.05)}
+}
+.hero p{
+  color:var(--text-dim);
+  font-size:clamp(.9rem,1.6vw,1.1rem);
+  max-width:640px;
+  margin:0 auto 24px;
+  line-height:1.8;
+  font-weight:400
+}
+.hero-badges{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  flex-wrap:wrap
+}
+.hero-badge{
+  background:rgba(129,140,248,.08);
+  border:1px solid rgba(129,140,248,.12);
+  border-radius:20px;
+  padding:6px 16px;
+  font-size:12px;
+  color:var(--text-dim);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  transition:all .3s
+}
+.hero-badge:hover{
+  border-color:var(--accent);
+  color:var(--accent);
+  background:rgba(129,140,248,.12);
+  box-shadow:0 0 16px var(--accent-glow);
+  transform:translateY(-1px)
+}
+.hero-badge strong{color:var(--text);font-weight:600}
+
+/* ============================================
+   HOME TAB — Doc cards (glass-morphism)
+   ============================================ */
+.docs-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(440px,1fr));
+  gap:32px;
+  margin-bottom:48px
+}
+.doc-card{
+  background:rgba(16,18,28,.75);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(129,140,248,.08);
+  border-radius:var(--radius);
+  padding:36px;
+  cursor:default;
+  transition:all .4s cubic-bezier(.16,1,.3,1);
+  position:relative;
+  overflow:hidden
+}
+.doc-card::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(129,140,248,.3),transparent);
+  opacity:0;
+  transition:opacity .4s
+}
+.doc-card:hover{
+  border-color:rgba(129,140,248,.2);
+  transform:translateY(-4px);
+  box-shadow:0 16px 48px rgba(129,140,248,.08)
+}
+.doc-card:hover::before{opacity:1}
+.doc-card h3{
+  font-family:var(--font-display);
+  font-size:17px;
+  margin-bottom:12px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:600
+}
+.doc-card h3 .ico{font-size:22px}
+.doc-card p,.doc-card li{color:var(--text-dim);font-size:14px;line-height:1.9}
+.doc-card ul{list-style:none;padding:0}
+.doc-card ul li{padding:6px 0 6px 20px;position:relative}
+.doc-card ul li::before{content:'▸';position:absolute;left:0;color:var(--accent)}
+.doc-card ol{padding-left:20px}
+.doc-card ol li{color:var(--text-dim);font-size:13px;line-height:1.7;padding:3px 0}
+.doc-card code{background:rgba(129,140,248,.1);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent);font-family:var(--font-mono)}
+
+/* ── 三大模块卡片 ── */
+.modules-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:24px 0 36px}
+.module-card{
+  position:relative;
+  background:rgba(16,18,28,.75);
+  backdrop-filter:blur(16px);
+  border:1px solid rgba(129,140,248,.08);
+  border-radius:14px;
+  padding:24px 20px 20px;
+  transition:transform .3s,border-color .3s,box-shadow .3s;
+  overflow:hidden
+}
+.module-card::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;
+  height:3px;
+  border-radius:14px 14px 0 0;
+  transition:opacity .3s
+}
+.module-card.m1::before{background:linear-gradient(90deg,#818cf8,#c084fc)}
+.module-card.m2::before{background:linear-gradient(90deg,#34d399,#2dd4bf)}
+.module-card.m3::before{background:linear-gradient(90deg,#f59e0b,#f97316)}
+.module-card:hover{
+  transform:translateY(-3px);
+  border-color:rgba(129,140,248,.18);
+  box-shadow:0 8px 32px rgba(129,140,248,.08)
+}
+.module-card .mod-icon{font-size:28px;margin-bottom:10px}
+.module-card .mod-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px}
+.module-card .mod-path{font-size:11px;font-family:var(--font-mono);color:var(--text-dim);margin-bottom:10px;word-break:break-all}
+.module-card .mod-desc{font-size:13px;color:var(--text-dim);line-height:1.7;margin-bottom:14px}
+.module-card .mod-gh{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-family:var(--font-mono);
+  color:var(--text-dim);text-decoration:none;
+  background:rgba(129,140,248,.06);
+  border:1px solid rgba(129,140,248,.1);
+  border-radius:6px;padding:6px 12px;
+  transition:background .2s,color .2s,border-color .2s
+}
+.module-card .mod-gh:hover{background:rgba(129,140,248,.12);color:var(--accent);border-color:rgba(129,140,248,.25)}
+.module-card .mod-gh svg{width:14px;height:14px;fill:currentColor}
+@media(max-width:768px){.modules-row{grid-template-columns:1fr}}
+.doc-card .pre{
+  background:rgba(0,0,0,.3);
+  border:1px solid rgba(129,140,248,.08);
+  border-radius:8px;
+  padding:16px;
+  font-family:var(--font-mono);
+  font-size:12px;
+  overflow-x:auto;
+  margin:12px 0;
+  white-space:pre;
+  color:var(--text);
+  line-height:1.6
+}
+.doc-card .pre .cmt{color:#6b7280}
+.doc-card .pre .kw{color:#818cf8}
+.doc-card .pre .str{color:#34d399}
+.doc-card .pre .num{color:#f59e0b}
+.steps{display:flex;flex-direction:column;gap:18px;margin-top:12px}
+.step{display:flex;gap:16px;align-items:flex-start}
+.step .num{
+  background:linear-gradient(135deg,var(--accent),#22d3ee);
+  color:#fff;
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:700;
+  flex-shrink:0;
+  margin-top:2px;
+  box-shadow:0 0 12px var(--accent-glow)
+}
+.step .body{font-size:13px;color:var(--text-dim);line-height:1.6}
+.step .body strong{color:var(--text)}
+.step .body code{background:rgba(129,140,248,.1);padding:1px 5px;border-radius:3px;font-size:12px;color:var(--accent);font-family:var(--font-mono)}
+
+/* ============================================
+   Scroll reveal animation
+   ============================================ */
+.doc-card{
+  opacity:0;
+  transform:translateY(30px);
+  transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1),border-color .4s,box-shadow .4s
+}
+.doc-card.revealed{
+  opacity:1;
+  transform:translateY(0)
+}
+
+/* ============================================
+   Method badges (Protocol tab)
+   ============================================ */
+.method{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;font-family:var(--font-mono);color:#fff;margin-right:6px;vertical-align:middle}
+.method-get{background:var(--green)}
+.method-post{background:var(--blue)}
+.method-delete{background:var(--red)}
+.method-put{background:var(--orange)}
+.endpoint{font-family:var(--font-mono);font-size:13px;color:var(--text);word-break:break-all}
+
+/* ============================================
+   Protocol tables
+   ============================================ */
+.proto-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+.proto-table th,.proto-table td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+.proto-table th{color:var(--text-dim);font-size:12px;text-transform:uppercase;background:rgba(16,18,28,.5)}
+.proto-table td{color:var(--text);font-size:12px}
+.proto-table tr:hover td{background:rgba(16,18,28,.4)}
+.proto-table .badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;margin:1px}
+.badge-green{background:rgba(34,197,94,.2);color:var(--green)}
+.badge-blue{background:rgba(59,130,246,.2);color:var(--blue)}
+.badge-yellow{background:rgba(234,179,8,.2);color:var(--yellow)}
+.badge-red{background:rgba(239,68,68,.2);color:var(--red)}
+.badge-purple{background:rgba(99,102,241,.2);color:var(--accent)}
+
+/* ============================================
+   Collapsible sections for Protocol tab
+   ============================================ */
+.collapse-wrap{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;background:rgba(16,18,28,.4)}
+.collapse-header{background:rgba(16,18,28,.5);padding:14px 18px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--text);transition:background .2s;user-select:none;font-family:var(--font-display)}
+.collapse-header:hover{background:rgba(26,29,46,.6)}
+.collapse-header .arrow{transition:transform .25s;font-size:12px;color:var(--text-dim)}
+.collapse-header .arrow.open{transform:rotate(90deg)}
+.collapse-body{padding:18px 20px;display:none;border-top:1px solid var(--border)}
+.collapse-body.open{display:block}
+
+/* ============================================
+   Architecture diagram (ASCII)
+   ============================================ */
+.arch-diagram{background:rgba(0,0,0,.3);border:1px solid rgba(129,140,248,.08);border-radius:8px;padding:16px;font-family:var(--font-mono);font-size:11px;line-height:1.3;overflow-x:auto;white-space:pre;color:var(--text-dim);margin:10px 0}
+.arch-diagram .hl{color:var(--accent)}
+.arch-diagram .hl2{color:var(--green)}
+.arch-diagram .hl3{color:var(--yellow)}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media(max-width:768px){
+  .container{padding:12px}
+  .agent-grid{grid-template-columns:1fr}
+  .search-bar{flex-direction:column}
+  .header{flex-wrap:wrap}
+  .docs-grid{grid-template-columns:1fr}
+  .header .stats{display:none}
+  .hero{padding:40px 16px 32px}
+  .hero-badges{gap:8px}
+  .hero-badge{font-size:11px;padding:4px 12px}
+  .orb-1,.orb-2{opacity:.2}
+}
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toasts"></div>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="header">
+  <div class="logo">OpenAgent Market</div>
+  <div class="status"><span class="dot offline" id="statusDot"></span><span id="statusText">Connecting...</span></div>
+  <div class="stats">
+    <span id="statAgents">Agents: --</span>
+    <span id="statUptime">Uptime: --</span>
+  </div>
+  <input class="key-input" type="password" id="apiKeyInput" placeholder="API Key (pd_mkt_...)" autocomplete="off">
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('home')">🏠 Home</div>
+  <div class="tab" onclick="switchTab('market')">🔍 Market</div>
+  <div class="tab" onclick="switchTab('upload')">📤 Upload</div>
+  <div class="tab" onclick="switchTab('keys')">🔑 Keys</div>
+  <div class="tab" onclick="switchTab('protocol')">📋 Protocol</div>
+</div>
+
+<!-- ============================================================
+     TAB: HOME
+     ============================================================ -->
+<div class="container" id="tab-home">
+  <div class="hero">
+    <h1>OpenAgent Market</h1>
+    <p>Agent 是 AI 能力的完整载体 — 自有工具、自有状态、自洽运行。<br><strong>项目一：Agent Runtime</strong> 让 Agent 跑起来；<strong>项目二：Agent Market</strong> 让 Agent 流通起来。<br>两个独立项目，一个统一协议，共同构建开放的 AI Agent 生态。</p>
+    <div class="hero-badges">
+      <span class="hero-badge">🧬 Agent = 完整的 AI 能力世界</span>
+      <span class="hero-badge">🔧 子Agent 自治运行时</span>
+      <span class="hero-badge">🔗 多Agent 协作协议</span>
+      <span class="hero-badge">🔐 安全沙箱 权限审计</span>
+      <span class="hero-badge">🌐 开放市场 一键发布</span>
+      <span class="hero-badge">🤖 llm_chat 配置自动继承</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+     三大模块
+     ════════════════════════════════════════════════════════ -->
+  <div class="modules-row">
+    <div class="module-card m1" data-aos="fade-up" data-aos-delay="0">
+      <div class="mod-icon">🔧</div>
+      <div class="mod-title">Agent Runtime</div>
+      <div class="mod-path">src/agents/</div>
+      <div class="mod-desc"><strong>让 Agent 跑起来。</strong>加载 agent.json → 审计权限 → 注入配置 → 启动 Pipeline — 从声明到执行的完整引擎。支持旧 SKILL.md 自动兼容。</div>
+      <div class="mod-gh" style="pointer-events:none;opacity:.5">📦 与 Market 同仓库</div>
+    </div>
+    <div class="module-card m2" data-aos="fade-up" data-aos-delay="1">
+      <div class="mod-icon">🌐</div>
+      <div class="mod-title">Agent Market</div>
+      <div class="mod-path">src/market/</div>
+      <div class="mod-desc"><strong>让 Agent 流通起来。</strong>FastAPI 市场服务 + Python SDK — 搜索、发布、下载、评分。SQLite 存储，零外部依赖，本地优先。</div>
+      <a class="mod-gh" href="https://github.com/openpeng/agent-market" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        github.com/openpeng/agent-market
+      </a>
+    </div>
+    <div class="module-card m3" data-aos="fade-up" data-aos-delay="2">
+      <div class="mod-icon">🚀</div>
+      <div class="mod-title">Agent Deploy</div>
+      <div class="mod-path">skills/agent-deploy/</div>
+      <div class="mod-desc"><strong>一键部署到任意 AI 工具。</strong>MCP Server 自动检测 Cursor / Claude Code / CodeBuddy / Copilot 等 9 种工具，下载适配，一条命令搞定。</div>
+      <a class="mod-gh" href="https://github.com/openpeng/agent-deploy" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        github.com/openpeng/agent-deploy
+      </a>
+    </div>
+  </div>
+
+  <div class="docs-grid">
+
+    <!-- Card 1: 项目亮点 -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="0">
+      <h3><span class="ico">🎯</span> 项目亮点</h3>
+      <p>OpenAgent 包含两个独立项目，通过统一协议协作。核心理念：<strong>Agent 不是更大的 Skill，它是 AI 能力的完整载体</strong> — 一个 Skill 解决一个任务，一个 Agent 拥有一个世界。</p>
+      <ul>
+        <li><strong>🧬 原子化设计</strong> — 每个 Agent 是完备的自治单元：工具、Pipeline、状态、LLM 配置自包含</li>
+        <li><strong>🔄 配置自动继承</strong> — LLM 配置从主 Agent 自动注入子 Agent，声明即用</li>
+        <li><strong>🔧 自由伸缩</strong> — 从"读取文件"到"多Agent协作数据分析系统"，同一套抽象</li>
+        <li><strong>🔗 多Agent 协作</strong> — 标准化协议通信，串行、并行、条件路由，Agent 编排 Agent</li>
+        <li><strong>🔐 安全沙箱</strong> — 文件、网络、子进程、资源四维审计，每个Agent都有权限边界</li>
+        <li><strong>🌐 市场生态</strong> — 一键发布、搜索、下载、评分，Agent 像 App 一样流通</li>
+        <li><strong>📦 自动发现</strong> — 安装即用，MainAgent 自动发现 market 下所有 Agent</li>
+      </ul>
+    </div>
+
+    <!-- Card 1.5: 为什么是 Agent -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="1">
+      <h3><span class="ico">🧠</span> 为什么是 Agent？— 超越 Skill 的范式跃迁</h3>
+      <p>Skill 解决<strong>上下文爆炸</strong>的表面问题，Agent 回答的是<strong>AI 能力的组织方式</strong>这一根本问题：</p>
+      <table class="proto-table" style="margin:8px 0">
+        <tr><th></th><th>Skill（技能）</th><th>Agent（智能体）</th></tr>
+        <tr><td>本质</td><td>一个可调用的函数片段</td><td><strong>一个拥有独立世界的完整存在</strong></td></tr>
+        <tr><td>状态</td><td>无状态，每次调用重新开始</td><td><strong>有状态，拥有记忆和生命周期</strong></td></tr>
+        <tr><td>工具</td><td>被动被编排</td><td><strong>主动声明需求，自治执行</strong></td></tr>
+        <tr><td>配置</td><td>依赖调用方传入一切</td><td><strong>自包含 LLM 配置、环境变量、权限</strong></td></tr>
+        <tr><td>复杂度</td><td>上限是单次调用的复杂度</td><td><strong>从一行代码到百Agent协同，同一抽象</strong></td></tr>
+        <tr><td>协作</td><td>由编排层统一调度</td><td><strong>Agent 可以直接发现和调用其他 Agent</strong></td></tr>
+        <tr><td>可分享性</td><td>分享一个代码片段</td><td><strong>分享一个完整的 AI 能力世界</strong></td></tr>
+      </table>
+      <p style="margin-top:8px;font-size:13px;color:var(--text-dim)">Skill 到 Agent 的升级，不是"更好的函数"，而是<strong style="color:var(--text)">从碎片到整体</strong>的范式跃迁。Agent 是 AI 能力的最小完整单元 — 它既是原子，也可以组成分子。</p>
+    </div>
+
+    <!-- Card 2: 项目结构 — 两个独立项目 -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="2">
+      <h3><span class="ico">📦</span> 项目结构 — 两个仓库，三大模块</h3>
+      <p>OpenAgent 由两个开源仓库组成，通过统一协议协作：</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:8px 0">
+        <div style="background:rgba(129,140,248,.06);border:1px solid rgba(129,140,248,.15);border-radius:8px;padding:14px">
+          <div style="font-weight:700;font-size:14px;color:var(--accent);margin-bottom:6px">🔧 Agent Runtime</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px"><code>src/agents/</code></div>
+          <div style="font-size:12px;line-height:1.7">让 Agent <strong style="color:var(--text)">跑起来</strong> — 加载、审计、执行的完整引擎</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:6px">
+            <code>MainAgent</code> 顶层入口<br>
+            <code>AgentLoader</code> 包加载校验<br>
+            <code>Auditor</code> 安全审计<br>
+            <code>SubAgentRuntime</code> 隔离执行<br>
+            <code>MessageBus</code> 协作文通<br>
+            <code>ToolRegistry</code> 工具注册
+          </div>
+        </div>
+        <div style="background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);border-radius:8px;padding:14px">
+          <div style="font-weight:700;font-size:14px;color:var(--accent2, #34d399);margin-bottom:6px">🌐 Agent Market</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px"><code>src/market/</code></div>
+          <div style="font-size:12px;line-height:1.7">让 Agent <strong style="color:var(--text)">流通起来</strong> — 发现、分享、安装的开放生态</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:6px">
+            <code>server.py</code> FastAPI 服务<br>
+            <code>MarketClient</code> Python SDK<br>
+            <code>database.py</code> SQLite 存储<br>
+            <code>search.py</code> 全文搜索<br>
+            <code>ratings.py</code> 评分系统<br>
+            <code>cache.py</code> 本地缓存
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--text-dim);margin-top:8px">
+        <a href="https://github.com/openpeng/agent-market" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">github.com/openpeng/agent-market</a>
+        &nbsp;← 同一份 <code>agent.json</code> + <code>worker.yaml</code> 定义 →
+        <a href="https://github.com/openpeng/agent-deploy" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">github.com/openpeng/agent-deploy</a>
+      </div>
+    </div>
+
+    <!-- Card 3: 从市场下载到运行 Agent -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="3">
+      <h3><span class="ico">🚀</span> 从市场下载到运行 Agent</h3>
+      <p>从 Market 搜索到运行 Agent 只需 <strong>3 行代码</strong>：</p>
+      <div class="steps">
+        <div class="step"><div class="num">1</div><div class="body"><strong>安装</strong> — <code>client.install("file-summarizer")</code></div></div>
+        <div class="step"><div class="num">2</div><div class="body"><strong>加载</strong> — <code>main.load_package(path)</code>（自动注入 LLM 配置）</div></div>
+        <div class="step"><div class="num">3</div><div class="body"><strong>运行</strong> — <code>result = main.run_sync(initial_args={"file_path": "..."})</code></div></div>
+      </div>
+    </div>
+
+    <!-- Card 4: 对接本地 Agent 市场 -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="4">
+      <h3><span class="ico">🔗</span> 对接本地 Agent 市场</h3>
+      <p><code>MarketClient</code> 提供完整的 Python SDK 无缝对接市场：</p>
+      <div class="pre">from market.client import MarketClient
+from agents import MainAgent
+
+client = MarketClient(server_url="http://localhost:8321",
+                       api_key="pd_mkt_xxxxxxxxxxxxxxxx")
+main = MainAgent()
+
+# 搜索
+client.search(query="web", category="browser", sort="downloads")
+# 安装后直接运行（自动发现 LLM 配置）
+path = client.install("file-summarizer")
+main.load_package(str(path))
+result = main.run_sync(initial_args={"file_path": "data.txt"})
+# 发布 / 更新
+client.publish("./my-agent-pkg", force=True)
+client.check_updates("my-agent")
+client.clean_cache(max_age_days=30)
+client.list_installed()
+client.uninstall("old-agent")</div>
+    </div>
+
+    <!-- Card 5: Agent 包格式 -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="5">
+      <h3><span class="ico">📦</span> Agent 包格式</h3>
+      <p>Agent 包的标准目录结构（支持 <code>.tar.gz</code> / <code>.zip</code>）：</p>
+      <div class="pre">my-agent/
+├── agent.json              # [必填] 包元数据 + 入口定义
+├── worker.yaml             # [必填] 入口工作流定义
+├── libs/                   # [可选] 共享 Python 脚本
+│   └── helper.py
+├── templates/              # [可选] 模板文件
+└── README.md               # [推荐] 说明文档</div>
+    </div>
+
+    <!-- Card 6: agent.json 协议详解 -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="6">
+      <h3><span class="ico">📋</span> agent.json 协议详解</h3>
+      <p><code>agent.json</code> 是 Agent 包的核心声明式配置（<strong>worker.yaml</strong> 位于包根目录）：</p>
+      <div class="pre">{
+  <span class="cmt">// 身份信息（必填）</span>
+  "<span class="kw">identity</span>": {
+    "<span class="kw">name</span>": <span class="str">"my-agent"</span>,         <span class="cmt">// 唯一标识</span>
+    "<span class="kw">version</span>": <span class="str">"1.0.0"</span>,        <span class="cmt">// semver</span>
+    "<span class="kw">description</span>": <span class="str">"..."</span>,
+    "<span class="kw">author</span>": <span class="str">"your-name"</span>,
+    "<span class="kw">display_name</span>": <span class="str">"显示名称"</span>,
+    "<span class="kw">tags</span>": [<span class="str">"tag1"</span>, <span class="str">"tag2"</span>]
+  },
+  <span class="cmt">// 入口配置（必填）</span>
+  "<span class="kw">entry</span>": {<span class="kw">main_subagent</span>: <span class="str">"worker"</span>},
+  <span class="cmt">// 子Agent引用列表（必填）</span>
+  "<span class="kw">subagents</span>": [
+    {"<span class="kw">name</span>":<span class="str">"worker"</span>, "<span class="kw">path</span>":<span class="str">"worker.yaml"</span>}
+  ],
+  "<span class="kw">category</span>": <span class="str">"utility"</span>,
+  "<span class="kw">type</span>": <span class="str">"agent"</span>,
+  "<span class="kw">license</span>": <span class="str">"MIT"</span>,
+  "<span class="kw">dependencies</span>": {<span class="kw">python3</span>: <span class="str">">=3.10"</span>}
+}</div>
+    </div>
+
+    <!-- Card 7: 安全与权限模型 -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="7">
+      <h3><span class="ico">🔐</span> 安全与权限模型</h3>
+      <p>每个子Agent声明所需权限，Auditor 自动审计拒绝越权访问：</p>
+      <div class="pre"><span class="cmt"># 权限声明示例</span>
+<span class="kw">permissions</span>:
+  <span class="kw">filesystem</span>:
+    <span class="kw">read</span>: ["<span class="str">data/**</span>"]
+    <span class="kw">write</span>: ["<span class="str">output/**</span>"]
+  <span class="kw">network</span>:
+    <span class="kw">outbound</span>: <span class="num">true</span>
+    <span class="kw">allowed_hosts</span>: ["<span class="str">api.example.com</span>"]
+  <span class="kw">subprocess</span>:
+    <span class="kw">max_concurrent</span>: <span class="num">2</span>
+    <span class="kw">allowed_commands</span>: ["<span class="str">python3</span>", "<span class="str">node</span>"]
+  <span class="kw">resources</span>:
+    <span class="kw">memory_limit</span>: <span class="str">"1GB"</span>
+    <span class="kw">timeout</span>: <span class="num">300</span></div>
+    </div>
+
+    <!-- Card 8: CLI & 代码示例 -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="8">
+      <h3><span class="ico">💻</span> CLI & 代码示例</h3>
+      <p>直接通过 curl 或 Python SDK 使用市场服务：</p>
+      <div class="pre"><span class="cmt"># 健康检查 & 搜索</span>
+curl http://localhost:8321/api/v1/health
+curl "http://localhost:8321/api/v1/agents?q=web&category=browser"
+
+<span class="cmt"># 发布 / 下载</span>
+curl -X POST -H "Authorization: Bearer pd_mkt_..." -F file=@agent.tar.gz \
+  http://localhost:8321/api/v1/agents
+curl -OJ http://localhost:8321/api/v1/agents/my-agent/download</div>
+    </div>
+
+    <!-- Card 9: llm_chat 工具 & 配置自动继承 -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="9">
+      <h3><span class="ico">🤖</span> llm_chat 工具 &amp; 配置自动继承</h3>
+      <p>子Agent 声明 <code>llm_chat</code> 即可调用大模型，<strong>无需配置 API Key</strong>：</p>
+      <div class="pre"><span class="cmt"># worker.yaml — llm_chat 使用示例</span>
+<span class="kw">tools</span>:
+  - <span class="kw">name</span>: llm_chat
+    <span class="kw">type</span>: builtin
+
+<span class="kw">pipeline</span>:
+  - <span class="kw">step</span>: analyze
+    <span class="kw">tool</span>: llm_chat
+    <span class="kw">args</span>:
+      <span class="kw">prompt</span>: <span class="str">"分析: {{raw_text}}"</span>
+      <span class="kw">system_prompt</span>: <span class="str">"你是一个助手"</span>
+    <span class="cmt"># model / api_key 不传 → 从主Agent自动继承</span>
+    <span class="kw">on_fail</span>: continue</div>
+      <p style="margin-top:8px;font-size:13px;color:var(--text-dim)">
+        🔄 配置优先: <strong>args显式</strong> → <strong>shared_context</strong> → <strong>环境变量</strong>
+      </p>
+    </div>
+
+    <!-- Card 10: 自定义 MCP 工具 -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="10">
+      <h3><span class="ico">🔌</span> 自定义 MCP 工具</h3>
+      <p>子Agent 可连接 MCP 服务器导入任意工具，支持 stdio 与 JSON-RPC：</p>
+      <div class="pre"><span class="cmt"># worker.yaml — MCP 工具声明</span>
+<span class="kw">tools</span>:
+  - <span class="kw">name</span>: fs
+    <span class="kw">type</span>: mcp
+    <span class="kw">server</span>:
+      <span class="kw">command</span>: <span class="str">"npx"</span>
+      <span class="kw">args</span>: [<span class="str">"-y"</span>, <span class="str">"@anthropic/mcp-server-filesystem"</span>, <span class="str">"/tmp"</span>]
+    <span class="kw">allowed_tools</span>: [<span class="str">"read_file"</span>, <span class="str">"write_file"</span>]
+    <span class="kw">timeout</span>: <span class="num">30</span>
+
+<span class="kw">pipeline</span>:
+  - <span class="kw">step</span>: read_it
+    <span class="kw">tool</span>: fs__read_file       <span class="cmt"># 命名空间: &lt;name&gt;__&lt;tool&gt;</span>
+    <span class="kw">args</span>:
+      <span class="kw">path</span>: <span class="str">"/tmp/data.txt"</span>
+      <span class="kw">output</span>: content</div>
+    </div>
+
+    <!-- Card 11: 未来判断 -->
+    <div class="doc-card" data-aos="fade-up" data-aos-delay="11">
+      <h3><span class="ico">🌌</span> 未来判断 — Agent 是 AI 能力的原子载体</h3>
+      <p>我们相信，Agent 将成为 AI 时代最基础的<strong>能力封装单位</strong>。就像函数是代码的原子、容器是部署的原子、App 是移动互联网的原子 — <strong>Agent 是 AI 的原子</strong>。</p>
+      <div class="steps" style="margin:10px 0">
+        <div class="step"><div class="num">1</div><div class="body"><strong>Function 时代</strong> — 一个函数解决一个计算问题。AI 调用函数，但函数不理解 AI。</div></div>
+        <div class="step"><div class="num">2</div><div class="body"><strong>Skill 时代</strong> — 一个 Skill 解决一个领域任务。上下文膨胀，仍是被动片段。</div></div>
+        <div class="step"><div class="num">3</div><div class="body"><strong>Agent 时代 ← 我们在这一步</strong> — Agent 拥有完整世界：工具、状态、配置、权限、记忆。从单功能到复杂系统，同一套抽象自由伸缩。</div></div>
+        <div class="step"><div class="num">4</div><div class="body"><strong>Agent 协作网络</strong> — Agent 发现 Agent、Agent 编排 Agent、Agent 交易 Agent。市场成为 Agent 的 App Store。</div></div>
+        <div class="step"><div class="num">5</div><div class="body"><strong>数字组织</strong> — 成百上千个 Agent 组成自组织系统。像细胞形成组织、组织形成器官、器官形成生命体。</div></div>
+      </div>
+      <p style="margin-top:8px;font-size:13px;color:var(--text-dim)"><strong>核心判断：</strong>不要做更大的 Skill，要做<strong style="color:var(--accent)">完整的 Agent</strong>。Agent 的简单与复杂不是对立面 — 一个只读文件的 Agent 和一个多Agent协作的数据分析系统，<strong style="color:var(--text)">都是同一个 Agent 抽象</strong>。这让复杂度可以递进叠加，而非一次性膨胀。</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB: MARKET
+     ============================================================ -->
+<div class="container" id="tab-market" style="display:none">
+  <div class="search-bar">
+    <input type="text" id="searchQ" placeholder="Search agents..." onkeydown="if(event.key==='Enter')searchAgents()">
+    <select id="searchCat"><option value="">All Categories</option></select>
+    <select id="searchType"><option value="">All Types</option><option value="agent">Agent</option><option value="skill">Skill</option><option value="workflow">Workflow</option></select>
+    <select id="searchSort"><option value="downloads">Downloads</option><option value="rating">Rating</option><option value="created">Date</option><option value="name">Name</option></select>
+    <select id="searchOrder"><option value="desc">Desc</option><option value="asc">Asc</option></select>
+    <button class="btn btn-primary" onclick="searchAgents()">Search</button>
+  </div>
+  <div id="agentGrid" class="agent-grid"><div class="spinner"></div></div>
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- ============================================================
+     TAB: UPLOAD
+     ============================================================ -->
+<div class="container" id="tab-upload" style="display:none">
+  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('uploadFile').click()">
+    <div class="icon">📦</div>
+    <div>Click or drag .tar.gz / .zip file</div>
+    <div style="font-size:12px;margin-top:6px">Max 50MB</div>
+    <input type="file" id="uploadFile" accept=".tar.gz,.zip" onchange="onFileSelected(event)">
+  </div>
+  <div id="uploadFileInfo" style="margin-top:12px;display:none;"></div>
+  <div class="upload-row">
+    <label><input type="checkbox" id="uploadForce"> Force overwrite</label>
+    <button class="btn btn-primary" id="uploadBtn" onclick="uploadAgent()" disabled>Upload &amp; Register</button>
+    <span id="uploadStatus" style="font-size:13px;color:var(--text-dim);"></span>
+  </div>
+  <div id="uploadResult" style="margin-top:16px;"></div>
+</div>
+
+<!-- ============================================================
+     TAB: API KEYS
+     ============================================================ -->
+<div class="container" id="tab-keys" style="display:none">
+  <div class="key-form">
+    <input type="text" id="keyOwner" placeholder="Owner name" style="width:160px">
+    <select id="keyRole"><option value="publisher">Publisher</option><option value="admin">Admin</option></select>
+    <button class="btn btn-primary" onclick="createApiKey()">Create Key</button>
+  </div>
+  <div id="keysResult" style="margin-top:12px;"></div>
+  <table class="key-table" id="keysTable" style="display:none"><thead><tr><th>Key</th><th>Owner</th><th>Role</th><th>Action</th></tr></thead><tbody></tbody></table>
+</div>
+
+<!-- ============================================================
+     TAB: PROTOCOL
+     ============================================================ -->
+<div class="container" id="tab-protocol" style="display:none">
+  <div class="hero" style="padding:24px 20px;margin-bottom:20px">
+    <h1 style="font-size:28px">Agent 协议规范</h1>
+    <p>完整的 Agent 包协议、协作协议、REST API 参考文档</p>
+  </div>
+
+  <div id="protocolContent">
+
+    <!-- Section 1: Agent 协议概述 -->
+    <div class="collapse-wrap">
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> 📡 Agent 协议概述
+      </div>
+      <div class="collapse-body">
+        <p>OpenAgent 协议是一套声明式、可组合的 AI Agent 定义规范，核心设计理念：</p>
+        <table class="proto-table">
+          <tr><th>理念</th><th>说明</th></tr>
+          <tr><td><span class="badge badge-purple">声明式</span></td><td>agent.json + YAML 声明 Agent 行为，无需编码</td></tr>
+          <tr><td><span class="badge badge-purple">工具自治</span></td><td>每个子Agent自行声明和注册所需工具，不依赖父Agent代劳</td></tr>
+          <tr><td><span class="badge badge-purple">Pipeline 驱动</span></td><td>按步骤顺序执行，每步调用一个工具，支持重试/跳过/中止</td></tr>
+          <tr><td><span class="badge badge-purple">模板变量</span></td><td><code>{{var}}</code>、<code>{{steps.x.output}}</code>、<code>{{shared_context.x}}</code> 等运行时变量解析</td></tr>
+          <tr><td><span class="badge badge-purple">协作策略</span></td><td>串行/并行/条件路由/动态路由，支持复杂工作流编排</td></tr>
+          <tr><td><span class="badge badge-purple">安全沙箱</span></td><td>声明式权限 + Auditor 审计，细粒度控制资源访问</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 2: 子Agent 配置规范 -->
+    <div class="collapse-wrap">
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> 🔌 子Agent 配置规范 (worker.yaml)
+      </div>
+      <div class="collapse-body">
+        <p>每个子Agent由一个 YAML 文件定义，包含工具声明、Pipeline 步骤和权限配置：</p>
+        <div class="pre"><span class="cmt"># worker.yaml — 完整示例（根目录）</span>
+<span class="kw">name</span>: worker
+<span class="kw">version</span>: <span class="str">"1.0.0"</span>
+<span class="kw">description</span>: <span class="str">"数据处理 + LLM 分析子Agent"</span>
+
+<span class="cmt"># 工具声明：子Agent只能调用此处列出的工具</span>
+<span class="kw">tools</span>:
+  - <span class="kw">name</span>: read_file
+    <span class="kw">type</span>: builtin
+  - <span class="kw">name</span>: llm_chat
+    <span class="kw">type</span>: builtin
+    <span class="cmt"># ★ 自动继承主Agent的 model/api_key/provider</span>
+  - <span class="kw">name</span>: bash
+    <span class="kw">type</span>: builtin
+
+<span class="cmt"># Pipeline 步骤（顺序执行）</span>
+<span class="kw">pipeline</span>:
+  - <span class="kw">step</span>: read_input
+    <span class="kw">tool</span>: read_file
+    <span class="kw">args</span>:
+      <span class="kw">path</span>: <span class="str">"{{file_path}}"</span>
+    <span class="kw">output</span>: raw_data
+    <span class="kw">on_fail</span>: fail
+
+  - <span class="kw">step</span>: analyze_llm
+    <span class="kw">tool</span>: llm_chat
+    <span class="kw">args</span>:
+      <span class="kw">prompt</span>: <span class="str">"分析: {{raw_data}}"</span>
+      <span class="kw">system_prompt</span>: <span class="str">"你是一个数据分析师"</span>
+    <span class="cmt"># model 不传 → 从主Agent自动继承</span>
+    <span class="kw">output</span>: llm_result
+    <span class="kw">on_fail</span>: continue   <span class="cmt"># LLM不可用时不中止</span>
+
+  - <span class="kw">step</span>: fallback
+    <span class="kw">tool</span>: bash
+    <span class="kw">args</span>:
+      <span class="kw">command</span>: <span class="str">"python3 {{package_dir}}/libs/analyze.py"</span>
+      <span class="kw">timeout</span>: <span class="num">30</span>
+    <span class="kw">output</span>: done
+    <span class="kw">on_fail</span>: fail
+
+<span class="cmt"># 权限声明</span>
+<span class="kw">permissions</span>:
+  <span class="kw">filesystem</span>:
+    <span class="kw">read</span>: [<span class="str">"data/**</span>", <span class="str">"libs/**</span>"]
+    <span class="kw">write</span>: [<span class="str">"output/**</span>"]
+  <span class="kw">subprocess</span>:
+    <span class="kw">max_concurrent</span>: <span class="num">1</span>
+    <span class="kw">allowed_commands</span>: [<span class="str">"python3"</span>, <span class="str">"cat"</span>, <span class="str">"echo"</span>]
+  <span class="kw">resources</span>:
+    <span class="kw">memory_limit</span>: <span class="str">"128MB"</span>
+    <span class="kw">timeout</span>: <span class="num">60</span>
+
+<span class="cmt"># 环境变量（可选）</span>
+<span class="kw">env</span>:
+  <span class="kw">LOG_LEVEL</span>: <span class="str">"info"</span></div>
+        <p><strong>字段说明：</strong></p>
+        <table class="proto-table">
+          <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+          <tr><td><code>tools</code></td><td>array</td><td>工具声明列表。类型：<code>builtin</code>（内置）、<code>skill</code>（技能）、<code>custom</code>（自定义）、<code>mcp</code>（MCP协议）</td></tr>
+          <tr><td><code>pipeline[]</code></td><td>array</td><td>顺序执行的步骤列表</td></tr>
+          <tr><td><code>pipeline[].on_fail</code></td><td>string</td><td>失败策略：<code>abort</code>（中止）、<code>skip</code>（跳过）、<code>retry(N)</code>（重试N次）</td></tr>
+          <tr><td><code>permissions</code></td><td>object</td><td>文件系统、网络、子进程、资源的权限声明</td></tr>
+          <tr><td><code>collaboration</code></td><td>object</td><td>协作配置（详见下节）</td></tr>
+          <tr><td><code>healthcheck</code></td><td>object</td><td>健康检查配置</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 3: LLM 配置继承 -->
+    <div class="collapse-wrap">
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> 🤖 LLM 配置自动继承
+      </div>
+      <div class="collapse-body">
+        <p>子Agent 使用 <code>llm_chat</code> 时，<strong>无需配置 model/api_key</strong>——配置自动从主 Agent 继承：</p>
+        <table class="proto-table">
+          <tr><th>优先级</th><th>读取位置</th><th>示例</th></tr>
+          <tr><td><span class="badge badge-red">① 最高</span></td><td><code>args.model</code> / <code>args.api_key</code></td><td><code>model: "gpt-4o"</code> 覆盖默认值</td></tr>
+          <tr><td><span class="badge badge-yellow">② 默认</span></td><td><code>shared_context.llm_config</code></td><td>MainAgent 启动时从环境变量读取并注入</td></tr>
+          <tr><td><span class="badge badge-gray">③ 兜底</span></td><td>环境变量</td><td><code>LLM_MODEL</code> / <code>OPENROUTER_API_KEY</code></td></tr>
+        </table>
+        <div class="pre"><span class="cmt"># 方式1: 不传 model/api_key → 自动继承</span>
+<span class="kw">pipeline</span>:
+  - <span class="kw">step</span>: use_default
+    <span class="kw">tool</span>: llm_chat
+    <span class="kw">args</span>:
+      <span class="kw">prompt</span>: <span class="str">"用默认模型分析..."</span>
+    <span class="cmt"># ✅ 无需 model/api_key — 自动从MainAgent.llm_config继承</span>
+
+<span class="cmt"># 方式2: 显式指定 → 覆盖默认值</span>
+  - <span class="kw">step</span>: use_custom
+    <span class="kw">tool</span>: llm_chat
+    <span class="kw">args</span>:
+      <span class="kw">prompt</span>: <span class="str">"用特定模型分析..."</span>
+      <span class="kw">model</span>: <span class="str">"claude-3-opus-20240229"</span>
+      <span class="kw">api_key</span>: <span class="str">"sk-ant-xxxxx"</span>
+      <span class="kw">provider</span>: <span class="str">"anthropic"</span></div>
+        <p style="margin-top:8px;font-size:13px;color:var(--text-dim)">
+          支持的 provider: <strong>openai</strong> | <strong>openrouter</strong> | <strong>anthropic</strong>
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 3: 协作配置 -->
+    <div class="collapse-wrap">
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> 🔄 协作配置 (Collaboration)
+      </div>
+      <div class="collapse-body">
+        <p><code>CollaborationConfig</code> 控制子Agent在协作中的角色和行为：</p>
+        <table class="proto-table">
+          <tr><th>字段</th><th>默认值</th><th>可选值</th><th>说明</th></tr>
+          <tr><td><code>execution_mode</code></td><td>sync</td><td>sync / async / async_wait</td><td>同步等待 / 异步不等待 / 异步可等待</td></tr>
+          <tr><td><code>trigger</code></td><td>auto</td><td>auto / manual / on_complete / on_fail / conditional / scheduled</td><td>子Agent激活条件</td></tr>
+          <tr><td><code>coordination</code></td><td>sequential</td><td>sequential / parallel_all / parallel_any / parallel_quorum / conditional / dynamic</td><td>协作策略</td></tr>
+          <tr><td><code>data_exchange</code></td><td>file</td><td>file / message / shared_context / stream</td><td>数据交换方式</td></tr>
+          <tr><td><code>merge_strategy</code></td><td>concat</td><td>concat / merge_dict / union / intersect / custom</td><td>并行结果合并策略</td></tr>
+          <tr><td><code>depends_on</code></td><td>[]</td><td>string[]</td><td>依赖的子Agent列表（完成后才能启动）</td></tr>
+          <tr><td><code>input_mapping</code></td><td>{}</td><td>dict</td><td>输入映射：从共享上下文映射到子Agent参数</td></tr>
+          <tr><td><code>output_mapping</code></td><td>{}</td><td>dict</td><td>输出映射：子Agent结果写入共享上下文</td></tr>
+          <tr><td><code>timeout</code></td><td>300</td><td>int</td><td>最大执行时间（秒）</td></tr>
+          <tr><td><code>max_retries</code></td><td>0</td><td>int</td><td>失败时最大重试次数</td></tr>
+          <tr><td><code>priority</code></td><td>0</td><td>int</td><td>执行优先级（数字越大越优先）</td></tr>
+        </table>
+        <p style="margin-top:10px"><strong>协作策略详解：</strong></p>
+        <ul>
+          <li><code>sequential</code> — 串行执行，一个完成后再启动下一个</li>
+          <li><code>parallel_all</code> — 并行执行所有，等待全部完成</li>
+          <li><code>parallel_any</code> — 并行执行，任一完成即继续</li>
+          <li><code>parallel_quorum</code> — 并行执行，超过半数完成即继续</li>
+          <li><code>conditional</code> — 条件判断后路由到不同子Agent</li>
+          <li><code>dynamic</code> — 运行时由父Agent动态决定</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Section 4: 工作流编排 -->
+    <div class="collapse-wrap">
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> 🧩 工作流编排 (Workflow)
+      </div>
+      <div class="collapse-body">
+        <p>在 <code>agent.json</code> 的 <code>entry</code> 中定义，支持三种编排方式：</p>
+
+        <p><strong>1️⃣ Chain（链式编排）</strong></p>
+        <div class="pre"><span class="str">"entry"</span>: {
+  <span class="str">"chain"</span>: [
+    {<span class="str">"subagent"</span>: <span class="str">"fetcher"</span>,  <span class="str">"output_key"</span>: <span class="str">"raw_html"</span>},
+    {<span class="str">"subagent"</span>: <span class="str">"parser"</span>,   <span class="str">"input_key"</span>: <span class="str">"raw_html"</span>,  <span class="str">"output_key"</span>: <span class="str">"data"</span>},
+    {<span class="str">"subagent"</span>: <span class="str">"reporter"</span>, <span class="str">"input_key"</span>: <span class="str">"data"</span>,    <span class="str">"output_key"</span>: <span class="str">"report"</span>}
+  ]
+}</div>
+
+        <p><strong>2️⃣ Fan-out（并行分发）</strong></p>
+        <div class="pre"><span class="str">"entry"</span>: {
+  <span class="str">"fan_out"</span>: [{
+    <span class="str">"group_name"</span>: <span class="str">"analyzers"</span>,
+    <span class="str">"targets"</span>: [<span class="str">"analyzer-a"</span>, <span class="str">"analyzer-b"</span>, <span class="str">"analyzer-c"</span>],
+    <span class="str">"strategy"</span>: <span class="str">"parallel_all"</span>,
+    <span class="str">"merge_strategy"</span>: <span class="str">"concat"</span>,
+    <span class="str">"output_key"</span>: <span class="str">"merged_results"</span>
+  }]
+}</div>
+
+        <p><strong>3️⃣ Conditional Routes（条件路由）</strong></p>
+        <div class="pre"><span class="str">"conditional_routes"</span>: [{
+  <span class="str">"condition"</span>: <span class="str">"{{steps.check.output.status}} == 'ok'"</span>,
+  <span class="str">"target"</span>: <span class="str">"process-ok"</span>,
+  <span class="str">"fallback"</span>: <span class="str">"process-error"</span>
+}]</div>
+
+      </div>
+    </div>
+
+    <!-- Section 5: 消息总线协议 -->
+    <div class="collapse-wrap">
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> ✉️ 消息总线协议 (MessageBus)
+      </div>
+      <div class="collapse-body">
+        <p>MessageBus 是父子Agent间的通信中枢，所有交互通过标准消息类型进行：</p>
+        <table class="proto-table">
+          <tr><th>分类</th><th>消息类型</th><th>说明</th></tr>
+          <tr><td><span class="badge badge-blue">控制</span></td><td><code>subagent.create</code></td><td>创建子Agent实例</td></tr>
+          <tr><td><span class="badge badge-blue">控制</span></td><td><code>subagent.destroy</code></td><td>销毁子Agent</td></tr>
+          <tr><td><span class="badge badge-blue">控制</span></td><td><code>subagent.pause</code></td><td>暂停子Agent</td></tr>
+          <tr><td><span class="badge badge-blue">控制</span></td><td><code>subagent.resume</code></td><td>恢复子Agent</td></tr>
+          <tr><td><span class="badge badge-green">任务</span></td><td><code>task.assign</code></td><td>分配任务</td></tr>
+          <tr><td><span class="badge badge-green">任务</span></td><td><code>task.progress</code></td><td>任务进度通知</td></tr>
+          <tr><td><span class="badge badge-green">任务</span></td><td><code>task.complete</code></td><td>任务完成</td></tr>
+          <tr><td><span class="badge badge-green">任务</span></td><td><code>task.fail</code></td><td>任务失败</td></tr>
+          <tr><td><span class="badge badge-yellow">工具</span></td><td><code>tool.call</code></td><td>工具调用请求</td></tr>
+          <tr><td><span class="badge badge-yellow">工具</span></td><td><code>tool.result</code></td><td>工具调用结果</td></tr>
+          <tr><td><span class="badge badge-yellow">工具</span></td><td><code>tool.request</code></td><td>工具权限请求</td></tr>
+          <tr><td><span class="badge badge-purple">状态</span></td><td><code>status.report</code></td><td>状态报告</td></tr>
+          <tr><td><span class="badge badge-purple">状态</span></td><td><code>log.emit</code></td><td>日志输出</td></tr>
+          <tr><td><span class="badge badge-purple">状态</span></td><td><code>health.check</code></td><td>健康检查</td></tr>
+          <tr><td><span class="badge badge-red">协作</span></td><td><code>collab.request_help</code></td><td>子Agent请求其他Agent帮助</td></tr>
+          <tr><td><span class="badge badge-red">协作</span></td><td><code>collab.forward</code></td><td>转发任务给兄弟Agent</td></tr>
+          <tr><td><span class="badge badge-red">协作</span></td><td><code>collab.merge</code></td><td>合并来自多个Agent的结果</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 6: 工具系统 -->
+    <div class="collapse-wrap">
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> 🔧 工具系统 (Tool System)
+      </div>
+      <div class="collapse-body">
+        <p>工具是子Agent执行任务的最小单元，有三种类型：</p>
+        <table class="proto-table">
+          <tr><th>类型</th><th>标识</th><th>说明</th><th>示例</th></tr>
+          <tr><td><span class="badge badge-green">builtin</span></td><td><code>type: builtin</code></td><td>AgentRuntime 内置的标准工具</td><td>read_file, bash, web_fetch, web_search, glob</td></tr>
+          <tr><td><span class="badge badge-purple">skill</span></td><td><code>type: skill</code></td><td>通过 SKILL.md 注册的技能工具</td><td>自定义数据分析/处理技能</td></tr>
+          <tr><td><span class="badge badge-blue">custom</span></td><td><code>type: custom</code></td><td>用户自定义工具（Python/JS 脚本）</td><td>internal_api.py, reporter.py</td></tr>
+        </table>
+        <p style="margin-top:10px">工具注册表（ToolRegistry）维护全局工具实例，子Agent声明工具后通过注册表获取实例副本。未声明的工具调用会抛出 <code>ToolNotDeclaredError</code>。</p>
+      </div>
+    </div>
+
+    <!-- Section 7: Pipeline 执行机制 -->
+    <div class="collapse-wrap">
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> 🎯 Pipeline 执行机制
+      </div>
+      <div class="collapse-body">
+        <p>子Agent的 Pipeline 按步骤顺序执行，每个步骤经过以下流程：</p>
+        <div class="arch-diagram">┌──────────────────────────────────────────────────┐
+│               Pipeline 步骤执行流程                  │
+├──────────────────────────────────────────────────┤
+│  1. <span class="hl">模板变量解析</span>                                   │
+│     TemplateResolver 递归解析 args 中的模板变量    │
+│     • {{var}} → 运行时参数                         │
+│     • {{steps.step_name.output}} → 上一步输出      │
+│     • {{shared_context.key}} → 共享上下文           │
+│     • {{state.key}} → 子Agent私有状态              │
+│                                                     │
+│  2. <span class="hl">工具参数注入</span>                                   │
+│     将解析后的参数传递给声明的工具                   │
+│                                                     │
+│  3. <span class="hl">工具调用</span>                                       │
+│     call_tool(tool_name, **resolved_args)            │
+│     检查工具是否已声明 → 调用 → 返回 ToolResult      │
+│                                                     │
+│  4. <span class="hl">错误处理</span>                                       │
+│     on_fail=abort  → 抛出异常，Pipeline中止          │
+│     on_fail=skip   → 跳过当前步骤，继续下一步        │
+│     on_fail=retry(N) → 最多重试N次                   │
+│                                                     │
+│  5. <span class="hl">结果保存</span>                                       │
+│     步骤结果保存到 _step_results[step_name]          │
+│                                                     │
+│  6. <span class="hl">进度通知</span>                                       │
+│     通过 MessageBus 发送 TASK_PROGRESS 消息          │
+└──────────────────────────────────────────────────┘</div>
+      </div>
+    </div>
+
+    <!-- Section 8: 生命周期管理 -->
+    <div class="collapse-wrap">
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> 🧬 生命周期管理
+      </div>
+      <div class="collapse-body">
+        <p>每个子Agent实例遵循严格的状态机：</p>
+        <div class="arch-diagram">  加载    校验    批准    创建    运行
+<span class="hl">LOADED</span> → <span class="hl2">VALIDATED</span> → <span class="hl3">APPROVED</span> → <span class="hl">CREATED</span> → <span class="hl2">RUNNING</span>
+                                       │
+                              ┌────────┼────────┐
+                              ▼        ▼        ▼
+                          <span class="hl3">PAUSED</span>  <span class="hl2">COMPLETED</span>  <span class="hl">FAILED</span>
+                              │                  │
+                              └─────▶ <span class="hl">DESTROYED</span> ◄─────┘</div>
+        <table class="proto-table">
+          <tr><th>状态</th><th>说明</th></tr>
+          <tr><td><code>loaded</code></td><td>子Agent配置已从YAML加载</td></tr>
+          <tr><td><code>validated</code></td><td>配置校验通过</td></tr>
+          <tr><td><code>approved</code></td><td>安全审计通过，权限已批准</td></tr>
+          <tr><td><code>created</code></td><td>运行时实例已创建</td></tr>
+          <tr><td><code>running</code></td><td>正在执行 Pipeline</td></tr>
+          <tr><td><code>paused</code></td><td>已暂停（可恢复）</td></tr>
+          <tr><td><code>completed</code></td><td>Pipeline 执行成功完成</td></tr>
+          <tr><td><code>failed</code></td><td>执行失败（记录错误信息）</td></tr>
+          <tr><td><code>destroyed</code></td><td>资源已清理，实例已销毁</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 9: REST API 完整参考 -->
+    <div class="collapse-wrap">
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> 📡 REST API 完整参考
+      </div>
+      <div class="collapse-body">
+        <p><strong>基础信息：</strong></p>
+        <table class="proto-table">
+          <tr><td>Base URL</td><td><code>http://localhost:8321/api/v1</code></td></tr>
+          <tr><td>认证方式</td><td><code>Authorization: Bearer pd_mkt_xxxxxxxxxxxxxxxx</code></td></tr>
+          <tr><td>端口</td><td>8321</td></tr>
+          <tr><td>数据目录</td><td><code>./data/market/</code></td></tr>
+          <tr><td>包存储</td><td><code>./data/market/packages/</code></td></tr>
+          <tr><td>数据库</td><td><code>./data/market/market.db</code> (SQLite)</td></tr>
+        </table>
+
+        <p style="margin-top:16px"><strong>全部端点：</strong></p>
+        <table class="proto-table">
+          <tr><th>方法</th><th>路径</th><th>认证</th><th>说明</th></tr>
+          <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/</td><td>—</td><td>前端页面入口</td></tr>
+          <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/api/v1/health</td><td>—</td><td>健康检查</td></tr>
+          <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/api/v1/agents</td><td>publisher+</td><td>注册/上传 Agent 包</td></tr>
+          <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/api/v1/agents</td><td>—</td><td>搜索/列表 Agent</td></tr>
+          <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/api/v1/agents/batch?ids=a,b,c</td><td>—</td><td>批量查询 Agent</td></tr>
+          <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/api/v1/agents/{id}</td><td>—</td><td>获取 Agent 详情</td></tr>
+          <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/api/v1/agents/{id}/download</td><td>—</td><td>下载 Agent 包文件</td></tr>
+          <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/api/v1/agents/{id}/ratings</td><td>publisher+</td><td>评分 Agent</td></tr>
+          <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/api/v1/agents/{id}/ratings</td><td>—</td><td>获取评分列表</td></tr>
+          <tr><td><span class="method method-delete">DELETE</span></td><td class="endpoint">/api/v1/agents/{id}</td><td>admin</td><td>删除 Agent</td></tr>
+          <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/api/v1/api-keys</td><td>master/admin</td><td>创建 API Key</td></tr>
+          <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/api/v1/api-keys</td><td>admin</td><td>列出 API Keys</td></tr>
+          <tr><td><span class="method method-delete">DELETE</span></td><td class="endpoint">/api/v1/api-keys/{key}</td><td>admin</td><td>撤销 API Key</td></tr>
+        </table>
+
+        <p style="margin-top:16px"><strong>搜索参数说明：</strong></p>
+        <table class="proto-table">
+          <tr><th>参数</th><th>类型</th><th>默认</th><th>说明</th></tr>
+          <tr><td><code>q</code></td><td>string</td><td>""</td><td>关键词搜索（匹配 name/display_name/description）</td></tr>
+          <tr><td><code>category</code></td><td>string</td><td>""</td><td>分类过滤</td></tr>
+          <tr><td><code>type</code></td><td>string</td><td>""</td><td>类型过滤</td></tr>
+          <tr><td><code>tags</code></td><td>string</td><td>""</td><td>标签过滤（逗号分隔）</td></tr>
+          <tr><td><code>sort</code></td><td>string</td><td>"downloads"</td><td>排序：downloads, rating, created, name</td></tr>
+          <tr><td><code>order</code></td><td>string</td><td>"desc"</td><td>方向：asc, desc</td></tr>
+          <tr><td><code>page</code></td><td>int</td><td>1</td><td>页码</td></tr>
+          <tr><td><code>page_size</code></td><td>int</td><td>20</td><td>每页条数（最大100）</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 10: MCP 工具协议 -->
+    <div class="collapse-wrap">
+      <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="arrow">▶</span> 🔌 MCP 工具协议 (Model Context Protocol)
+      </div>
+      <div class="collapse-body">
+        <p>子Agent 可通过 <strong>MCP 协议</strong> 连接外部工具服务器，每个 Agent 可绑定不同的 MCP 服务器。支持 <code>stdio</code> transport。</p>
+        <table class="proto-table">
+          <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+          <tr><td><code>name</code></td><td>string</td><td>✅</td><td>MCP 服务器别名（用于命名空间前缀）</td></tr>
+          <tr><td><code>type</code></td><td>string</td><td>✅</td><td>固定为 <code>mcp</code></td></tr>
+          <tr><td><code>server.command</code></td><td>string</td><td>✅</td><td>MCP 服务器启动命令</td></tr>
+          <tr><td><code>server.args</code></td><td>string[]</td><td>✅</td><td>命令行参数</td></tr>
+          <tr><td><code>server.env</code></td><td>dict</td><td></td><td>环境变量覆盖</td></tr>
+          <tr><td><code>server.cwd</code></td><td>string</td><td></td><td>工作目录</td></tr>
+          <tr><td><code>allowed_tools</code></td><td>string[]</td><td></td><td>允许的工具列表（空 = 全部导入）</td></tr>
+          <tr><td><code>timeout</code></td><td>int</td><td>30</td><td>每个工具调用的超时时间（秒）</td></tr>
+        </table>
+        <p style="margin-top:10px"><strong>使用方式：</strong></p>
+        <div class="pre"><span class="cmt"># worker.yaml</span>
+<span class="kw">tools</span>:
+  - <span class="kw">name</span>: fs
+    <span class="kw">type</span>: mcp
+    <span class="kw">server</span>:
+      <span class="kw">command</span>: <span class="str">"npx"</span>
+      <span class="kw">args</span>: [<span class="str">"-y"</span>, <span class="str">"@modelcontextprotocol/server-filesystem"</span>, <span class="str">"/tmp"</span>]
+    <span class="kw">allowed_tools</span>: [<span class="str">"read_file"</span>, <span class="str">"write_file"</span>]
+
+<span class="kw">pipeline</span>:
+  - <span class="kw">step</span>: read_config
+    <span class="kw">tool</span>: fs__read_file        <span class="cmt"># 命名空间格式: <name>__<tool></span>
+    <span class="kw">args</span>:
+      <span class="kw">path</span>: <span class="str">"/tmp/config.json"</span>
+
+  - <span class="kw">step</span>: save_result
+    <span class="kw">tool</span>: fs__write_file
+    <span class="kw">args</span>:
+      <span class="kw">path</span>: <span class="str">"/tmp/output.json"</span>
+      <span class="kw">content</span>: <span class="str">"{{steps.read_config.output}}"</span></div>
+        <p style="margin-top:8px;font-size:13px;color:var(--text-dim)">
+          💡 MCP 服务器自动启动并 JSON-RPC 握手 · 工具列表自动发现 · 命名空间隔离避免冲突 · <strong>每个子 Agent 可绑定独立的 MCP 服务器</strong>
+        </p>
+      </div>
+    </div>
+
+  </div><!-- /protocolContent -->
+</div><!-- /tab-protocol -->
+
+<!-- ============================================================
+     MODAL: Agent Detail
+     ============================================================ -->
+<div class="modal-overlay" id="detailModal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+var currentPage=1,totalPages=1,currentAgentId=null,pendingScore=0,selectedFile=null;
+
+function toast(m,t){var c=document.getElementById('toasts'),d=document.createElement('div');d.className='toast '+(t||'info');d.textContent=m;c.appendChild(d);setTimeout(function(){d.remove()},3500)}
+
+var API_BASE='https://market.aitboy.cn/api/v1';function api(path,opts){opts=opts||{};var h=opts.headers||{};var ak=document.getElementById('apiKeyInput').value.trim();if(ak)h['Authorization']='Bearer '+ak;return fetch(API_BASE+path,Object.assign({},opts,{headers:h}))}
+
+function fs(b){if(!b)return'0 B';if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(1)+' MB'}
+
+function fu(s){if(!s)return'--';var d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60);if(d)return d+'d '+h+'h';if(h)return h+'h '+m+'m';return m+'m'}
+
+function sh(s){var r='';for(var i=0;i<5;i++)r+='<span class="star'+(i<s?' active':'')+'" data-v="'+(i+1)+'">★</span>';return r}
+function rs(n){var s='';for(var i=1;i<=5;i++)s+=i<=n?'★':'☆';return s}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(function(el){
+    el.classList.toggle('active',el.textContent.toLowerCase().includes(t))
+  });
+  ['home','market','upload','keys','protocol'].forEach(function(id){
+    document.getElementById('tab-'+id).style.display=id===t?'':'none'
+  });
+  if(t==='market')searchAgents();
+  if(t==='keys')loadApiKeys();
+}
+
+function toggleCollapse(header){
+  var arrow=header.querySelector('.arrow');
+  var body=header.nextElementSibling;
+  arrow.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+async function checkHealth(){
+  try{var r=await api('/health');if(!r.ok)throw Error();var d=await r.json();
+    document.getElementById('statusDot').className='dot online';document.getElementById('statusText').textContent='Connected';
+    document.getElementById('statAgents').textContent='Agents: '+d.agents_count;
+    document.getElementById('statUptime').textContent='Uptime: '+fu(d.uptime);
+    var sel=document.getElementById('searchCat');if(sel.options.length<=1){
+      ['general','browser','data_analysis','content_creation','web_scraper','file_processor','ai_chat','utility','other'].forEach(function(c){
+        var o=document.createElement('option');o.value=c;o.textContent=c.replace(/_/g,' ').replace(/\b\w/g,function(x){return x.toUpperCase()});sel.appendChild(o)})}
+  }catch(e){document.getElementById('statusDot').className='dot offline';document.getElementById('statusText').textContent='Offline'}
+}
+
+async function searchAgents(p){
+  p=p||1;currentPage=p;
+  var params=new URLSearchParams({q:document.getElementById('searchQ').value,category:document.getElementById('searchCat').value,type:document.getElementById('searchType').value,sort:document.getElementById('searchSort').value,order:document.getElementById('searchOrder').value,page:p,page_size:20});
+  var g=document.getElementById('agentGrid');g.innerHTML='<div class="spinner"></div>';
+  try{var r=await api('/agents?'+params);if(!r.ok)throw Error((await r.json()).detail||'Error');var d=await r.json();totalPages=Math.ceil(d.total/d.page_size);
+    if(!d.items.length){g.innerHTML='<div class="empty"><div class="icon">📭</div><div>No agents found</div></div>';}else{
+    g.innerHTML=d.items.map(function(a){var t=(a.tags||[]).map(function(x){return'<span class="tag">'+x+'</span>'}).join('');
+      return'<div class="card" onclick="openDetail(\''+a.id+'\')"><div><span class="name">'+(a.display_name||a.id)+'</span><span class="version">v'+a.version+'</span></div><div class="desc">'+(a.description||'No description')+'</div>'+(t?'<div class="tags">'+t+'</div>':'')+'<div class="meta"><span>'+a.category+'</span><span>⬇ '+(a.download_count||0)+'</span><span class="stars">'+rs(Math.round(a.rating||0))+' '+(a.rating||0).toFixed(1)+'</span><span>'+fs(a.package_size)+'</span></div></div>'}).join('')}
+    var pg=document.getElementById('pagination');if(totalPages<=1)pg.innerHTML='';else pg.innerHTML='<button class="btn btn-outline btn-sm" onclick="searchAgents('+(currentPage-1)+')"'+(currentPage<=1?' disabled':'')+'>Prev</button><span>Page '+currentPage+' / '+totalPages+'</span><button class="btn btn-outline btn-sm" onclick="searchAgents('+(currentPage+1)+')"'+(currentPage>=totalPages?' disabled':'')+'>Next</button>'}catch(e){g.innerHTML='<div class="empty"><div class="icon">⚠️</div><div>'+e.message+'</div></div>'}
+}
+
+function closeModal(){document.getElementById('detailModal').style.display='none';currentAgentId=null}
+
+async function openDetail(id){currentAgentId=id;var m=document.getElementById('modalContent');m.innerHTML='<div class="spinner"></div>';document.getElementById('detailModal').style.display='flex';
+  try{var ar=await api('/agents/'+id),rr=await api('/agents/'+id+'/ratings');if(!ar.ok)throw Error('Agent not found');var a=await ar.json(),rt=rr.ok?await rr.json():{items:[],total:0,average:0};
+  var deps='';if(a.dependencies&&Object.keys(a.dependencies).length)deps=Object.entries(a.dependencies).map(function(e){return'<span class="tag">'+e[0]+': '+e[1]+'</span>'}).join('');
+  m.innerHTML='<button class="close" onclick="closeModal()">×</button><h2>'+(a.display_name||a.name)+' <span style="font-size:14px;color:var(--accent);">v'+a.version+'</span></h2>'
+    +'<div class="field"><label>Description</label><div class="val">'+(a.description||'No description')+'</div></div>'
+    +'<div class="field"><label>Author</label><div class="val">'+(a.author||'--')+'</div></div>'
+    +'<div class="field"><label>License</label><div class="val">'+(a.license||'MIT')+'</div></div>'
+    +'<div class="field"><label>Category</label><div class="val">'+a.category+'</div></div>'
+    +'<div class="field"><label>Type</label><div class="val">'+a.type+'</div></div>'
+    +'<div class="field"><label>Size</label><div class="val">'+fs(a.package_size)+' ('+a.package_format+')</div></div>'
+    +'<div class="field"><label>Downloads</label><div class="val">'+(a.download_count||0)+'</div></div>'
+    +'<div class="field"><label>Rating</label><div class="val">'+rs(Math.round(a.rating||0))+' '+(a.rating||0).toFixed(1)+' ('+(a.review_count||0)+' reviews)</div></div>'
+    +(a.tags&&a.tags.length?'<div class="field"><label>Tags</label><div class="val">'+a.tags.map(function(t){return'<span class="tag">'+t+'</span>'}).join(' ')+'</div></div>':'')
+    +(deps?'<div class="field"><label>Dependencies</label><div class="val">'+deps+'</div></div>':'')
+    +(a.readme?'<div class="section"><h3>README</h3><div style="max-height:200px;overflow-y:auto;background:var(--bg-input);padding:12px;border-radius:6px;font-size:13px;white-space:pre-wrap;">'+a.readme+'</div></div>':'')
+    +'<div class="section" style="display:flex;gap:10px;align-items:center"><a class="btn btn-primary" href="'+API_BASE+'/agents/'+id+'/download">Download</a><button class="btn btn-danger btn-sm" onclick="deleteAgent(\''+id+'\')">Delete</button></div>'
+    +'<div class="section"><h3>Ratings ('+rt.total+')</h3><div class="rating-stars" id="rateStars" onclick="clickStar(event)">'+sh(0)+'</div><textarea class="rating-comment" id="rateComment" placeholder="Add a comment..."></textarea><button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="submitRating()">Submit Rating</button></div>'
+    +'<div class="section" id="ratingList">'+(rt.items.length?rt.items.map(function(rv){return'<div class="review-item"><div class="stars">'+rs(rv.score)+'</div><div class="comment">'+(rv.comment||'No comment')+'</div><div class="date">'+rv.created_at+'</div></div>'}).join(''):'<div style="color:var(--text-dim);font-size:13px">No ratings yet</div></div>')}catch(e){m.innerHTML='<button class="close" onclick="closeModal()">×</button><div class="empty">'+e.message+'</div>'}
+}
+
+function clickStar(e){if(!e.target.classList.contains('star'))return;var v=parseInt(e.target.getAttribute('data-v'));pendingScore=v;Array.from(document.querySelectorAll('#rateStars .star')).forEach(function(s,i){s.classList.toggle('active',i<v)})}
+async function submitRating(){if(!currentAgentId||!pendingScore){toast('Select a star rating','error');return}
+  try{var r=await api('/agents/'+currentAgentId+'/ratings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({score:pendingScore,comment:document.getElementById('rateComment').value})});if(!r.ok)throw Error((await r.json()).detail);toast('Rating submitted!','success');pendingScore=0;openDetail(currentAgentId)}catch(e){toast(e.message,'error')}}
+
+async function deleteAgent(id){if(!confirm('Delete "'+id+'"? Cannot be undone.'))return;
+  try{var r=await api('/agents/'+id,{method:'DELETE'});if(!r.ok)throw Error((await r.json()).detail||'Error');toast('Agent deleted','success');closeModal();searchAgents(currentPage)}catch(e){toast(e.message,'error')}}
+
+var uz=document.getElementById('uploadZone');uz.addEventListener('dragover',function(e){e.preventDefault();uz.classList.add('drag')});uz.addEventListener('dragleave',function(){uz.classList.remove('drag')});uz.addEventListener('drop',function(e){e.preventDefault();uz.classList.remove('drag');if(e.dataTransfer.files.length)hf(e.dataTransfer.files[0])});
+function onFileSelected(e){if(e.target.files.length)hf(e.target.files[0])}
+function hf(file){var i=document.getElementById('uploadFileInfo');i.style.display='';i.innerHTML='<span style="color:var(--accent);">Selected: '+file.name+' ('+fs(file.size)+')</span>';selectedFile=file;document.getElementById('uploadBtn').disabled=false}
+async function uploadAgent(){if(!selectedFile)return;var b=document.getElementById('uploadBtn'),s=document.getElementById('uploadStatus');b.disabled=true;s.textContent='Uploading...';
+  var fd=new FormData();fd.append('file',selectedFile);fd.append('force',document.getElementById('uploadForce').checked?'true':'false');
+  try{var r=await api('/agents',{method:'POST',body:fd});var d=await r.json();if(!r.ok)throw Error(d.detail||'Failed');document.getElementById('uploadResult').innerHTML='<div class="card" style="cursor:default"><div style="color:var(--green);font-weight:700">Upload Successful!</div><div>ID: '+d.id+'</div><div>Version: '+d.version+'</div><div>Size: '+fs(d.package_size)+'</div></div>';s.textContent='';b.disabled=false;toast('Agent registered: '+d.id,'success')}catch(e){toast(e.message,'error');s.textContent='Error';b.disabled=false}}
+
+async function loadApiKeys(){var tb=document.querySelector('#keysTable tbody'),rr=document.getElementById('keysResult');tb.innerHTML='<tr><td colspan="4"><div class="spinner"></div></td></tr>';
+  try{var r=await api('/api-keys');if(!r.ok){if(r.status===401){rr.innerHTML='<div style="color:var(--text-dim);font-size:13px">💡 首次使用？在下方填写 Owner 名称，选择 Role，点击 <strong>Create Key</strong> 创建第一条 API Key。创建后会自动填入左上角输入框。</div>';document.getElementById('keysTable').style.display='none';return}throw Error((await r.json()).detail||'Forbidden')}var keys=await r.json();document.getElementById('keysTable').style.display=keys.length?'':'none';rr.innerHTML='';
+  tb.innerHTML=keys.map(function(k){return'<tr><td><code>'+k.key+'</code></td><td>'+k.owner+'</td><td><span class="tag">'+k.role+'</span></td><td><button class="btn btn-danger btn-sm" onclick="revokeKey(\''+k.key+'\')">Revoke</button></td></tr>'}).join('')}catch(e){document.getElementById('keysTable').style.display='none';rr.innerHTML='<div style="color:var(--text-dim)">'+e.message+'</div>'}
+}
+
+async function createApiKey(){var o=document.getElementById('keyOwner').value.trim();if(!o){toast('Enter owner name','error');return}
+  try{var r=await fetch(API_BASE+'/api-keys',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({owner:o,role:document.getElementById('keyRole').value})});var d=await r.json();if(!r.ok)throw Error(d.detail||'Error');
+  document.getElementById('keyOwner').value='';document.getElementById('keysResult').innerHTML='<div class="card" style="cursor:default"><div style="color:var(--green);font-weight:700">Key Created!</div><div style="word-break:break-all;font-family:monospace;font-size:13px">'+d.key+'</div><div style="font-size:12px;color:var(--text-dim);margin-top:4px">🔑 已自动填入左上角输入框</div></div>';toast('API Key created!','success');
+  document.getElementById('apiKeyInput').value=d.key;localStorage.setItem('market_api_key',d.key);
+  loadApiKeys();checkHealth()}catch(e){toast(e.message,'error')}}
+
+async function revokeKey(key){if(!confirm('Revoke key: '+key+'?'))return;
+  try{var r=await api('/api-keys/'+key,{method:'DELETE'});if(!r.ok)throw Error((await r.json()).detail||'Error');toast('Key revoked','success');loadApiKeys()}catch(e){toast(e.message,'error')}}
+
+(function init(){
+  var saved=localStorage.getItem('market_api_key');if(saved)document.getElementById('apiKeyInput').value=saved;
+  document.getElementById('apiKeyInput').addEventListener('input',function(){localStorage.setItem('market_api_key',this.value)});
+  checkHealth();setInterval(checkHealth,30000);
+})();
+
+/* ============================================
+   Scroll reveal — Home tab card animations
+   ============================================ */
+(function scrollReveal(){
+  var observer=new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        var delay=parseInt(entry.target.getAttribute('data-aos-delay')||'0');
+        entry.target.style.transitionDelay=(delay*0.08)+'s';
+        entry.target.classList.add('revealed');
+        observer.unobserve(entry.target)
+      }
+    })
+  },{threshold:0.08});
+  document.querySelectorAll('.doc-card[data-aos], .module-card[data-aos]').forEach(function(el){observer.observe(el)});
+})();
+</script>
+</body>
+</html>
