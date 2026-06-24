@@ -185,8 +185,10 @@ def extract_skill_metadata(package_path):
     if package_path.name.endswith(".tar.gz"):
         with tarfile.open(package_path, "r:gz") as tar:
             for m in tar.getmembers():
-                parts = m.name.split("/")
-                if len(parts) == 2 and parts[1] == "skill.json":
+                # tar 成员名使用正斜杠，但兼容反斜杠
+                parts = m.name.replace("\\", "/").split("/")
+                # 支持顶层 skill.json 或单一层级目录下的 skill.json
+                if len(parts) <= 2 and parts[-1] == "skill.json":
                     f = tar.extractfile(m)
                     if f:
                         return json.loads(f.read().decode("utf-8"))
@@ -195,8 +197,8 @@ def extract_skill_metadata(package_path):
         import zipfile
         with zipfile.ZipFile(package_path, "r") as zf:
             for name in zf.namelist():
-                parts = name.split("/")
-                if len(parts) == 2 and parts[1] == "skill.json":
+                parts = name.replace("\\", "/").split("/")
+                if len(parts) <= 2 and parts[-1] == "skill.json":
                     with zf.open(name) as f:
                         return json.loads(f.read().decode("utf-8"))
             raise FileNotFoundError("包中未找到 skill.json")
@@ -210,8 +212,10 @@ def extract_mcp_metadata(package_path):
     if package_path.name.endswith(".tar.gz"):
         with tarfile.open(package_path, "r:gz") as tar:
             for m in tar.getmembers():
-                parts = m.name.split("/")
-                if len(parts) == 2 and parts[1] == "mcp-server.json":
+                # tar 成员名使用正斜杠，但兼容反斜杠
+                parts = m.name.replace("\\", "/").split("/")
+                # 支持顶层 mcp-server.json 或单一层级目录下的 mcp-server.json
+                if len(parts) <= 2 and parts[-1] == "mcp-server.json":
                     f = tar.extractfile(m)
                     if f:
                         return json.loads(f.read().decode("utf-8"))
@@ -220,8 +224,8 @@ def extract_mcp_metadata(package_path):
         import zipfile
         with zipfile.ZipFile(package_path, "r") as zf:
             for name in zf.namelist():
-                parts = name.split("/")
-                if len(parts) == 2 and parts[1] == "mcp-server.json":
+                parts = name.replace("\\", "/").split("/")
+                if len(parts) <= 2 and parts[-1] == "mcp-server.json":
                     with zf.open(name) as f:
                         return json.loads(f.read().decode("utf-8"))
             raise FileNotFoundError("包中未找到 mcp-server.json")
