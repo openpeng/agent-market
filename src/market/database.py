@@ -129,6 +129,15 @@ class MarketDatabase:
             CREATE INDEX IF NOT EXISTS idx_agent_skills_skill_id ON agent_skills(skill_id);
             CREATE INDEX IF NOT EXISTS idx_agent_mcp_servers_server_id ON agent_mcp_servers(mcp_server_id);
 
+            -- ─── Schema migrations ───
+            # Ensure config_content column exists on mcp_servers (added in v1.1)
+            cursor = await self._conn.execute("PRAGMA table_info(mcp_servers)")
+            existing_cols = {row[1] for row in await cursor.fetchall()}
+            if "config_content" not in existing_cols:
+                await self._conn.execute("ALTER TABLE mcp_servers ADD COLUMN config_content TEXT DEFAULT ''")
+            if "package_format" not in existing_cols:
+                await self._conn.execute("ALTER TABLE mcp_servers ADD COLUMN package_format TEXT DEFAULT 'tar.gz'")
+
             -- ─── Teams 表 ───
             CREATE TABLE IF NOT EXISTS teams (
                 id TEXT PRIMARY KEY,
