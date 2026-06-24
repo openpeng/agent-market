@@ -496,11 +496,16 @@ textarea.rating-comment:focus{border-color:var(--accent);outline:none}
 .arch-diagram .hl3{color:var(--yellow)}
 
 /* ============================================
+   Grid layout for cards
+   ============================================ */
+.agent-grid,.skill-grid,.mcp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+
+/* ============================================
    Responsive
    ============================================ */
 @media(max-width:768px){
   .container{padding:12px}
-  .agent-grid{grid-template-columns:1fr}
+  .agent-grid,.skill-grid,.mcp-grid{grid-template-columns:1fr}
   .search-bar{flex-direction:column}
   .header{flex-wrap:wrap}
   .docs-grid{grid-template-columns:1fr}
@@ -531,11 +536,13 @@ textarea.rating-comment:focus{border-color:var(--accent);outline:none}
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('home')">🏠 Home</div>
-  <div class="tab" onclick="switchTab('market')">🔍 Market</div>
-  <div class="tab" onclick="switchTab('upload')">📤 Upload</div>
-  <div class="tab" onclick="switchTab('keys')">🔑 Keys</div>
-  <div class="tab" onclick="switchTab('protocol')">📋 Protocol</div>
+  <div class="tab active" data-tab="home" onclick="switchTab('home')">🏠 Home</div>
+  <div class="tab" data-tab="market" onclick="switchTab('market')">🔍 Agents</div>
+  <div class="tab" data-tab="skills" onclick="switchTab('skills')">⚡ Skills</div>
+  <div class="tab" data-tab="mcp" onclick="switchTab('mcp')">🔌 MCP Servers</div>
+  <div class="tab" data-tab="upload" onclick="switchTab('upload')">📤 Upload</div>
+  <div class="tab" data-tab="keys" onclick="switchTab('keys')">🔑 Keys</div>
+  <div class="tab" data-tab="protocol" onclick="switchTab('protocol')">📋 Protocol</div>
 </div>
 
 <!-- ============================================================
@@ -1305,10 +1312,49 @@ curl -OJ http://localhost:8321/api/v1/agents/my-agent/download</div>
 </div><!-- /tab-protocol -->
 
 <!-- ============================================================
+     TAB: SKILLS
+     ============================================================ -->
+<div class="container" id="tab-skills" style="display:none">
+  <div class="search-bar">
+    <input type="text" id="skillSearchQ" placeholder="Search skills..." onkeydown="if(event.key==='Enter')searchSkills()">
+    <select id="skillSearchCat"><option value="">All Categories</option></select>
+    <button class="btn btn-primary" onclick="searchSkills()">Search</button>
+  </div>
+  <div id="skillGrid" class="skill-grid"><div class="spinner"></div></div>
+  <div class="pagination" id="skillPagination"></div>
+</div>
+
+<!-- ============================================================
+     TAB: MCP SERVERS
+     ============================================================ -->
+<div class="container" id="tab-mcp" style="display:none">
+  <div class="search-bar">
+    <input type="text" id="mcpSearchQ" placeholder="Search MCP servers..." onkeydown="if(event.key==='Enter')searchMcpServers()">
+    <button class="btn btn-primary" onclick="searchMcpServers()">Search</button>
+  </div>
+  <div id="mcpGrid" class="mcp-grid"><div class="spinner"></div></div>
+  <div class="pagination" id="mcpPagination"></div>
+</div>
+
+<!-- ============================================================
      MODAL: Agent Detail
      ============================================================ -->
 <div class="modal-overlay" id="detailModal" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- ============================================================
+     MODAL: Skill Detail
+     ============================================================ -->
+<div class="modal-overlay" id="skillDetailModal" style="display:none" onclick="if(event.target===this)closeSkillModal()">
+  <div class="modal" id="skillModalContent"></div>
+</div>
+
+<!-- ============================================================
+     MODAL: MCP Server Detail
+     ============================================================ -->
+<div class="modal-overlay" id="mcpDetailModal" style="display:none" onclick="if(event.target===this)closeMcpModal()">
+  <div class="modal" id="mcpModalContent"></div>
 </div>
 
 <script>
@@ -1327,12 +1373,14 @@ function rs(n){var s='';for(var i=1;i<=5;i++)s+=i<=n?'★':'☆';return s}
 
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(function(el){
-    el.classList.toggle('active',el.textContent.toLowerCase().includes(t))
+    el.classList.toggle('active',el.getAttribute('data-tab')===t)
   });
-  ['home','market','upload','keys','protocol'].forEach(function(id){
+  ['home','market','skills','mcp','upload','keys','protocol'].forEach(function(id){
     document.getElementById('tab-'+id).style.display=id===t?'':'none'
   });
   if(t==='market')searchAgents();
+  if(t==='skills')searchSkills();
+  if(t==='mcp')searchMcpServers();
   if(t==='keys')loadApiKeys();
 }
 
@@ -1351,6 +1399,9 @@ async function checkHealth(){
     var sel=document.getElementById('searchCat');if(sel.options.length<=1){
       ['general','browser','data_analysis','content_creation','web_scraper','file_processor','ai_chat','utility','other'].forEach(function(c){
         var o=document.createElement('option');o.value=c;o.textContent=c.replace(/_/g,' ').replace(/\b\w/g,function(x){return x.toUpperCase()});sel.appendChild(o)})}
+    var skillSel=document.getElementById('skillSearchCat');if(skillSel.options.length<=1){
+      ['general','browser','data_analysis','content_creation','web_scraper','file_processor','ai_chat','utility','other'].forEach(function(c){
+        var o=document.createElement('option');o.value=c;o.textContent=c.replace(/_/g,' ').replace(/\b\w/g,function(x){return x.toUpperCase()});skillSel.appendChild(o)})}
   }catch(e){document.getElementById('statusDot').className='dot offline';document.getElementById('statusText').textContent='Offline'}
 }
 
@@ -1414,6 +1465,68 @@ async function createApiKey(){var o=document.getElementById('keyOwner').value.tr
 
 async function revokeKey(key){if(!confirm('Revoke key: '+key+'?'))return;
   try{var r=await api('/api-keys/'+key,{method:'DELETE'});if(!r.ok)throw Error((await r.json()).detail||'Error');toast('Key revoked','success');loadApiKeys()}catch(e){toast(e.message,'error')}}
+
+/* ============================================
+   Skills tab
+   ============================================ */
+var skillCurrentPage=1,skillTotalPages=1,currentSkillId=null;
+
+async function searchSkills(p){
+  p=p||1;skillCurrentPage=p;
+  var params=new URLSearchParams({q:document.getElementById('skillSearchQ').value,category:document.getElementById('skillSearchCat').value,page:p,page_size:50});
+  var g=document.getElementById('skillGrid');g.innerHTML='<div class="spinner"></div>';
+  try{var r=await api('/skills?'+params);if(!r.ok)throw Error((await r.json()).detail||'Error');var d=await r.json();skillTotalPages=Math.ceil(d.total/d.page_size);
+    if(!d.items.length){g.innerHTML='<div class="empty"><div class="icon">📭</div><div>No skills found</div></div>';}else{
+    g.innerHTML=d.items.map(function(s){
+      var catBadge=s.category?'<span class="tag">'+s.category+'</span>':'';
+      return'<div class="card" onclick="openSkillDetail(\''+s.id+'\')"><div><span class="name">'+(s.display_name||s.id)+'</span><span class="version">v'+s.version+'</span></div><div class="desc">'+(s.description||'No description')+'</div>'+(catBadge?'<div class="tags">'+catBadge+'</div>':'')+'<div class="meta"><span>⬇ '+(s.download_count||0)+'</span></div></div>'}).join('')}
+    var pg=document.getElementById('skillPagination');if(skillTotalPages<=1)pg.innerHTML='';else pg.innerHTML='<button class="btn btn-outline btn-sm" onclick="searchSkills('+(skillCurrentPage-1)+')"'+(skillCurrentPage<=1?' disabled':'')+'>Prev</button><span>Page '+skillCurrentPage+' / '+skillTotalPages+'</span><button class="btn btn-outline btn-sm" onclick="searchSkills('+(skillCurrentPage+1)+')"'+(skillCurrentPage>=skillTotalPages?' disabled':'')+'>Next</button>'}catch(e){g.innerHTML='<div class="empty"><div class="icon">⚠️</div><div>'+e.message+'</div></div>'}
+}
+
+function closeSkillModal(){document.getElementById('skillDetailModal').style.display='none';currentSkillId=null}
+
+async function openSkillDetail(id){currentSkillId=id;var m=document.getElementById('skillModalContent');m.innerHTML='<div class="spinner"></div>';document.getElementById('skillDetailModal').style.display='flex';
+  try{var r=await api('/skills/'+id);if(!r.ok)throw Error('Skill not found');var s=await r.json();
+  m.innerHTML='<button class="close" onclick="closeSkillModal()">×</button><h2>'+(s.display_name||s.name)+' <span style="font-size:14px;color:var(--accent);">v'+s.version+'</span></h2>'
+    +'<div class="field"><label>Description</label><div class="val">'+(s.description||'No description')+'</div></div>'
+    +'<div class="field"><label>Author</label><div class="val">'+(s.author||'--')+'</div></div>'
+    +'<div class="field"><label>Category</label><div class="val">'+(s.category||'--')+'</div></div>'
+    +'<div class="field"><label>Downloads</label><div class="val">'+(s.download_count||0)+'</div></div>'
+    +(s.tags&&s.tags.length?'<div class="field"><label>Tags</label><div class="val">'+s.tags.map(function(t){return'<span class="tag">'+t+'</span>'}).join(' ')+'</div></div>':'')
+    +(s.readme?'<div class="section"><h3>README</h3><div style="max-height:200px;overflow-y:auto;background:var(--bg-input);padding:12px;border-radius:6px;font-size:13px;white-space:pre-wrap;">'+s.readme+'</div></div>':'')
+    +'<div class="section" style="display:flex;gap:10px;align-items:center"><a class="btn btn-primary" href="'+API_BASE+'/skills/'+id+'/download">Download</a></div>'}catch(e){m.innerHTML='<button class="close" onclick="closeSkillModal()">×</button><div class="empty">'+e.message+'</div>'}
+}
+
+/* ============================================
+   MCP Servers tab
+   ============================================ */
+var mcpCurrentPage=1,mcpTotalPages=1,currentMcpId=null;
+
+async function searchMcpServers(p){
+  p=p||1;mcpCurrentPage=p;
+  var params=new URLSearchParams({q:document.getElementById('mcpSearchQ').value,page:p,page_size:50});
+  var g=document.getElementById('mcpGrid');g.innerHTML='<div class="spinner"></div>';
+  try{var r=await api('/mcp-servers?'+params);if(!r.ok)throw Error((await r.json()).detail||'Error');var d=await r.json();mcpTotalPages=Math.ceil(d.total/d.page_size);
+    if(!d.items.length){g.innerHTML='<div class="empty"><div class="icon">📭</div><div>No MCP servers found</div></div>';}else{
+    g.innerHTML=d.items.map(function(m){
+      var toolsBadge=m.tools_count!==undefined?'<span class="tag">'+m.tools_count+' tools</span>':'';
+      return'<div class="card" onclick="openMcpDetail(\''+m.id+'\')"><div><span class="name">'+(m.display_name||m.id)+'</span><span class="version">v'+m.version+'</span></div><div class="desc">'+(m.description||'No description')+'</div>'+(toolsBadge?'<div class="tags">'+toolsBadge+'</div>':'')+'<div class="meta"><span>⬇ '+(m.download_count||0)+'</span></div></div>'}).join('')}
+    var pg=document.getElementById('mcpPagination');if(mcpTotalPages<=1)pg.innerHTML='';else pg.innerHTML='<button class="btn btn-outline btn-sm" onclick="searchMcpServers('+(mcpCurrentPage-1)+')"'+(mcpCurrentPage<=1?' disabled':'')+'>Prev</button><span>Page '+mcpCurrentPage+' / '+mcpTotalPages+'</span><button class="btn btn-outline btn-sm" onclick="searchMcpServers('+(mcpCurrentPage+1)+')"'+(mcpCurrentPage>=mcpTotalPages?' disabled':'')+'>Next</button>'}catch(e){g.innerHTML='<div class="empty"><div class="icon">⚠️</div><div>'+e.message+'</div></div>'}
+}
+
+function closeMcpModal(){document.getElementById('mcpDetailModal').style.display='none';currentMcpId=null}
+
+async function openMcpDetail(id){currentMcpId=id;var m=document.getElementById('mcpModalContent');m.innerHTML='<div class="spinner"></div>';document.getElementById('mcpDetailModal').style.display='flex';
+  try{var r=await api('/mcp-servers/'+id);if(!r.ok)throw Error('MCP Server not found');var s=await r.json();
+  m.innerHTML='<button class="close" onclick="closeMcpModal()">×</button><h2>'+(s.display_name||s.name)+' <span style="font-size:14px;color:var(--accent);">v'+s.version+'</span></h2>'
+    +'<div class="field"><label>Description</label><div class="val">'+(s.description||'No description')+'</div></div>'
+    +'<div class="field"><label>Author</label><div class="val">'+(s.author||'--')+'</div></div>'
+    +'<div class="field"><label>Tools Count</label><div class="val">'+(s.tools_count||0)+'</div></div>'
+    +'<div class="field"><label>Downloads</label><div class="val">'+(s.download_count||0)+'</div></div>'
+    +(s.tags&&s.tags.length?'<div class="field"><label>Tags</label><div class="val">'+s.tags.map(function(t){return'<span class="tag">'+t+'</span>'}).join(' ')+'</div></div>':'')
+    +(s.readme?'<div class="section"><h3>README</h3><div style="max-height:200px;overflow-y:auto;background:var(--bg-input);padding:12px;border-radius:6px;font-size:13px;white-space:pre-wrap;">'+s.readme+'</div></div>':'')
+    +'<div class="section" style="display:flex;gap:10px;align-items:center"><a class="btn btn-primary" href="'+API_BASE+'/mcp-servers/'+id+'/download">Download</a></div>'}catch(e){m.innerHTML='<button class="close" onclick="closeMcpModal()">×</button><div class="empty">'+e.message+'</div>'}
+}
 
 (function init(){
   var saved=localStorage.getItem('market_api_key');if(saved)document.getElementById('apiKeyInput').value=saved;
